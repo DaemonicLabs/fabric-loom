@@ -27,9 +27,11 @@ package net.fabricmc.loom.util;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import com.strobel.core.Mapping;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.providers.MappingsProvider;
 import net.fabricmc.loom.providers.MinecraftMappedProvider;
+import net.fabricmc.mappings.Mappings;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
 import org.apache.commons.io.IOUtils;
@@ -41,10 +43,8 @@ import org.zeroturnaround.zip.commons.FileUtils;
 import org.zeroturnaround.zip.transform.StringZipEntryTransformer;
 import org.zeroturnaround.zip.transform.ZipEntryTransformerEntry;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
+import java.lang.ref.SoftReference;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -129,6 +129,59 @@ public class ModProcessor {
 				return GSON.toJson(json);
 			}
 		}))});
+	}
+
+	static SoftReference<Mappings> mappings;
+
+	public static void remapJar2(File input, File output, File mappingsFile, Project project) throws IOException {
+		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
+		String fromM = "intermediary";
+		String toM = "named";
+
+		MinecraftMappedProvider mappedProvider = extension.getMinecraftMappedProvider();
+		MappingsProvider mappingsProvider = extension.getMappingsProvider();
+
+		Path inputPath = input.getAbsoluteFile().toPath();
+		Path mc = mappedProvider.MINECRAFT_INTERMEDIARY_JAR.toPath();
+		Path[] mcDeps = mappedProvider.getMapperPaths().stream()
+				.map(File::toPath)
+				.toArray(Path[]::new);
+		Set<Path> modCompiles = new HashSet<>();
+		for (RemappedConfigurationEntry entry : Constants.MOD_COMPILE_ENTRIES) {
+			project.getConfigurations().getByName(entry.getSourceConfiguration()).getFiles().stream()
+					.filter((f) -> !f.equals(input))
+					.map(p -> {
+						if (p.equals(input)) {
+							return inputPath;
+						} else {
+							return p.toPath();
+						}
+					})
+					.forEach(modCompiles::add);
+		}
+
+
+		project.getLogger().lifecycle(":remapping " + input.getName() + " (TinyRemapper, " + fromM + " -> " + toM + ")");
+
+
+		TinyRemapper remapper = TinyRemapper.newRemapper()
+				.withMappings(TinyRemapperMappingsHelper.create(mappingsProvider.getMappings(), fromM, toM))
+				.build();
+
+		try (OutputConsumerPath outputConsumer = new OutputConsumerPath(Paths.get(output.getAbsolutePath()))) {
+			outputConsumer.addNonClassFiles(inputPath);
+			remapper.readClassPath(modCompiles.toArray(new Path[0]));
+			remapper.readClassPath(mc);
+			remapper.readClassPath(mcDeps);
+			remapper.readInputs(inputPath);
+			remapper.apply(outputConsumer);
+		} finally {
+			remapper.finish();
+		}
+
+		if(!output.exists()){
+			throw new RuntimeException("Failed to remap JAR to " + toM + " file not found: " + output.getAbsolutePath());
+		}
 	}
 
 	public static void remapJar(File input, File output, Project project) throws IOException {

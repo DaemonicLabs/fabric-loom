@@ -105,7 +105,7 @@ public class AbstractPlugin implements Plugin<Project> {
 		Configuration includeConfig = project.getConfigurations().maybeCreate(Constants.INCLUDE);
 		includeConfig.setTransitive(false); // Dont get transitive deps
 
-		project.getConfigurations().maybeCreate(Constants.MAPPINGS);
+		Configuration mappingsConfig = project.getConfigurations().maybeCreate(Constants.MAPPINGS);
 
 		for (RemappedConfigurationEntry entry : Constants.MOD_COMPILE_ENTRIES) {
 			Configuration compileModsConfig = project.getConfigurations().maybeCreate(entry.getSourceConfiguration());
@@ -145,7 +145,7 @@ public class AbstractPlugin implements Plugin<Project> {
 		project.getDependencies().registerTransform(DebofTransformer.class, spec -> {
 			spec.getFrom().attribute(debofAttribute, false).attribute(artifactType, "jar");
 			spec.getTo().attribute(debofAttribute, true).attribute(artifactType, "jar");
-//			spec.parameters(parameters -> parameters.setProject(project));
+			spec.parameters(parameters -> parameters.getMappings().from(mappingsConfig));
 		});
 
 		configureIDEs();

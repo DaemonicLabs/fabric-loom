@@ -31,8 +31,10 @@ import org.gradle.api.artifacts.transform.InputArtifact;
 import org.gradle.api.artifacts.transform.TransformAction;
 import org.gradle.api.artifacts.transform.TransformOutputs;
 import org.gradle.api.artifacts.transform.TransformParameters;
+import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.FileSystemLocation;
 import org.gradle.api.provider.Provider;
+import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.PathSensitive;
 import org.gradle.api.tasks.PathSensitivity;
 
@@ -47,11 +49,15 @@ public abstract class DebofTransformer implements TransformAction<DebofTransform
 
 	@Override
 	public void transform(TransformOutputs outputs) {
+		ConfigurableFileCollection mappingsFileCollection = getParameters().getMappings();
+		File mappingsFile = mappingsFileCollection.iterator().next(); //.getAsFile().get();
+
 		File inputFile = getInput().get().getAsFile();
 
 		Project project =  ProjectHolder.getProject();
 
 		project.getLogger().lifecycle("Hello this seems to work!");
+		project.getLogger().lifecycle("using mappings: " + mappingsFile.toString());
 
 //		if(true){
 //			throw new RuntimeException("this works");
@@ -61,7 +67,7 @@ public abstract class DebofTransformer implements TransformAction<DebofTransform
 		try {
 			String fileName = inputFile.getName();
 			String nameWithoutExtension = fileName.substring(0, fileName.length() - 4);
-			ModProcessor.remapJar(inputFile, outputs.file(nameWithoutExtension + "-remapped.jar"), project);
+			ModProcessor.remapJar2(inputFile, outputs.file(nameWithoutExtension + "-remapped.jar"), mappingsFile, project);
 		} catch (IOException e) {
 			throw new RuntimeException("Failed to remap " + inputFile.getName(), e);
 		}
@@ -71,6 +77,9 @@ public abstract class DebofTransformer implements TransformAction<DebofTransform
 
 	public interface Parameters extends TransformParameters {
 		// TODO add ConfigurableFileCollection for mappings
+
+		@InputFiles
+		ConfigurableFileCollection getMappings();
 	}
 
 }
