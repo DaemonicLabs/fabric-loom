@@ -40,15 +40,11 @@ import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
 import org.gradle.api.artifacts.result.DependencyResult;
 import org.gradle.api.artifacts.result.ResolvedDependencyResult;
 import org.gradle.api.attributes.Attribute;
-import org.gradle.api.attributes.AttributeContainer;
-import org.gradle.api.attributes.AttributesSchema;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginConvention;
-import org.gradle.api.plugins.ObjectConfigurationAction;
 import org.gradle.api.publish.Publication;
 import org.gradle.api.publish.PublishingExtension;
 import org.gradle.api.publish.maven.MavenPublication;
-import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.bundling.AbstractArchiveTask;
 import org.gradle.api.tasks.compile.JavaCompile;
@@ -62,7 +58,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 public class AbstractPlugin implements Plugin<Project> {
@@ -137,14 +132,20 @@ public class AbstractPlugin implements Plugin<Project> {
 
 		Attribute artifactType = Attribute.of("artifactType", String.class);
 		Attribute debofAttribute = Attribute.of("debof", Boolean.class);
+
+		project.getDependencies().getArtifactTypes().getByName("jar", (type) -> {
+			type.getAttributes().attribute(debofAttribute, false);
+		});
 		extension.debofAttribute = debofAttribute;
 
 		project.getDependencies().attributesSchema(attributesSchema -> attributesSchema.attribute(artifactType));
 
+		ProjectHolder.setProject(project);
+
 		project.getDependencies().registerTransform(DebofTransformer.class, spec -> {
 			spec.getFrom().attribute(debofAttribute, false).attribute(artifactType, "jar");
 			spec.getTo().attribute(debofAttribute, true).attribute(artifactType, "jar");
-			spec.parameters(parameters -> parameters.setProject(project));
+//			spec.parameters(parameters -> parameters.setProject(project));
 		});
 
 		configureIDEs();

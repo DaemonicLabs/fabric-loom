@@ -24,6 +24,8 @@
 
 package net.fabricmc.loom.transformers;
 
+import net.fabricmc.loom.util.ProjectHolder;
+import net.fabricmc.loom.util.ModProcessor;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.transform.InputArtifact;
 import org.gradle.api.artifacts.transform.TransformAction;
@@ -31,11 +33,11 @@ import org.gradle.api.artifacts.transform.TransformOutputs;
 import org.gradle.api.artifacts.transform.TransformParameters;
 import org.gradle.api.file.FileSystemLocation;
 import org.gradle.api.provider.Provider;
-import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.PathSensitive;
 import org.gradle.api.tasks.PathSensitivity;
 
 import java.io.File;
+import java.io.IOException;
 
 public abstract class DebofTransformer implements TransformAction<DebofTransformer.Parameters> {
 
@@ -47,29 +49,28 @@ public abstract class DebofTransformer implements TransformAction<DebofTransform
 	public void transform(TransformOutputs outputs) {
 		File inputFile = getInput().get().getAsFile();
 
-		getParameters().getProject().getLogger().lifecycle("Hello this seems to work!");
+		Project project =  ProjectHolder.getProject();
 
-		if(true){
-			throw new RuntimeException("this works");
-		}
+		project.getLogger().lifecycle("Hello this seems to work!");
 
-//		try {
-//			ModProcessor.remapJar(inputFile, inputFile, null);
-//		} catch (IOException e) {
-//			throw new RuntimeException("Failed to remap " + inputFile.getName(), e);
+//		if(true){
+//			throw new RuntimeException("this works");
 //		}
 
-		outputs.file(getInput());
 
+		try {
+			String fileName = inputFile.getName();
+			String nameWithoutExtension = fileName.substring(0, fileName.length() - 4);
+			ModProcessor.remapJar(inputFile, outputs.file(nameWithoutExtension + "-remapped.jar"), project);
+		} catch (IOException e) {
+			throw new RuntimeException("Failed to remap " + inputFile.getName(), e);
+		}
+
+		outputs.file(getInput());
 	}
 
 	public interface Parameters extends TransformParameters {
-
-		@Input
-		Project getProject();
-
-		void setProject(Project p);
-
+		// TODO add ConfigurableFileCollection for mappings
 	}
 
 }
