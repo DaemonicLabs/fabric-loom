@@ -24,37 +24,112 @@
 
 package net.fabricmc.loom.task;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonObject;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.providers.MappingsProvider;
+import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.MixinRefmapHelper;
 import net.fabricmc.loom.util.NestedJars;
 import net.fabricmc.loom.util.TinyRemapperMappingsHelper;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
 import net.fabricmc.tinyremapper.TinyUtils;
+import org.apache.commons.io.FileUtils;
 import org.gradle.api.Project;
+import org.gradle.api.artifacts.*;
+import org.gradle.api.file.FileCopyDetails;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.jvm.tasks.Jar;
+import org.zeroturnaround.zip.ZipUtil;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.LinkedHashSet;
+import java.util.Locale;
 import java.util.Set;
 
 public class RemapJarTask extends Jar {
+	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 	private RegularFileProperty input;
 	private Property<Boolean> addNestedDependencies;
 
 	public RemapJarTask() {
 		super();
+		setGroup("fabric");
 		input = getProject().getObjects().fileProperty();
 		addNestedDependencies = getProject().getObjects().property(Boolean.class);
+
+//		if (getAddNestedDependencies().get()) {
+			Project project = getProject();
+			Configuration includeConfig = project.getConfigurations().maybeCreate(Constants.INCLUDE);
+			getMetaInf().into("jars", (cpSpec) -> {
+				cpSpec.from(includeConfig);
+				cpSpec.eachFile((fileCopyDetails) -> {
+					File file = fileCopyDetails.getFile();
+					project.getLogger().lifecycle("verifying nested jar: " + file);
+					ModuleVersionIdentifier dependency = null;
+					for(ResolvedArtifact artifact : includeConfig.getResolvedConfiguration().getResolvedArtifacts()) {
+						if(file == artifact.getFile()) {
+							dependency = artifact.getModuleVersion().getId();
+							break;
+						}
+					}
+					if(dependency == null) {
+						throw new RuntimeException("could not find dependency matching file: " + file);
+					}
+
+					if(!ZipUtil.containsEntry(file, "fabric.mod.json")){
+						project.getLogger().lifecycle("adding fabric.mod.json to " + file);
+						LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
+						File tempDir = new File(extension.getUserCache(), "temp/modprocessing");
+						if(!tempDir.exists()){
+							tempDir.mkdirs();
+						}
+						File tempFile = new File(tempDir, file.getName());
+						if(tempFile.exists()){
+							tempFile.delete();
+						}
+						try {
+							FileUtils.copyFile(file, tempFile);
+						} catch (IOException e) {
+							throw new RuntimeException("Failed to copy file", e);
+						}
+						ZipUtil.addEntry(tempFile, "fabric.mod.json", getMod(dependency).getBytes());
+
+						try {
+							if(file.exists()){
+								file.delete();
+							}
+							FileUtils.copyFile(tempFile, file);
+						} catch (IOException e) {
+							throw new RuntimeException("Failed to copy file", e);
+						}
+					} else {
+						// Do nothing
+					}
+				});
+			});
+//		}
+	}
+
+	private static String getMod(ModuleVersionIdentifier dependency){
+		JsonObject jsonObject = new JsonObject();
+		jsonObject.addProperty("schemaVersion", 1);
+		jsonObject.addProperty("id", (dependency.getGroup().replaceAll("\\.", "_") + "_" + dependency.getName()).toLowerCase(Locale.ENGLISH));
+		jsonObject.addProperty("version", dependency.getVersion());
+		jsonObject.addProperty("name", dependency.getName());
+
+		return GSON.toJson(jsonObject);
 	}
 
 	@TaskAction

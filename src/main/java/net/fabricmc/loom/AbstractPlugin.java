@@ -35,13 +35,17 @@ import net.fabricmc.loom.util.*;
 import org.gradle.api.*;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
+import org.gradle.api.artifacts.PublishArtifact;
 import org.gradle.api.artifacts.component.ModuleComponentIdentifier;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
 import org.gradle.api.artifacts.result.DependencyResult;
 import org.gradle.api.artifacts.result.ResolvedDependencyResult;
 import org.gradle.api.attributes.Attribute;
+import org.gradle.api.component.Artifact;
+import org.gradle.api.internal.artifacts.dsl.FileSystemPublishArtifact;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginConvention;
+import org.gradle.api.provider.Provider;
 import org.gradle.api.publish.Publication;
 import org.gradle.api.publish.PublishingExtension;
 import org.gradle.api.publish.maven.MavenPublication;
@@ -106,6 +110,7 @@ public class AbstractPlugin implements Plugin<Project> {
 		includeConfig.setTransitive(false); // Dont get transitive deps
 
 		Configuration mappingsConfig = project.getConfigurations().maybeCreate(Constants.MAPPINGS);
+		Configuration remappedConfig = project.getConfigurations().maybeCreate("remapped");
 
 		for (RemappedConfigurationEntry entry : Constants.MOD_COMPILE_ENTRIES) {
 			Configuration compileModsConfig = project.getConfigurations().maybeCreate(entry.getSourceConfiguration());
@@ -325,6 +330,10 @@ public class AbstractPlugin implements Plugin<Project> {
 			if (extension.remapMod) {
 				AbstractArchiveTask jarTask = (AbstractArchiveTask) project1.getTasks().getByName("jar");
 				RemapJarTask remapJarTask = (RemapJarTask) project1.getTasks().findByName("remapJar");
+
+				project1.artifacts((artifactHandler -> {
+					PublishArtifact remapped = artifactHandler.add("remapped", remapJarTask);
+				}));
 
 				assert remapJarTask != null;
 				if (!remapJarTask.getInput().isPresent()) {
