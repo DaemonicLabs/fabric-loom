@@ -32,20 +32,19 @@ import net.fabricmc.loom.task.RemapJarTask;
 import net.fabricmc.loom.task.RemapSourcesJarTask;
 import net.fabricmc.loom.transformers.DebofTransformer;
 import net.fabricmc.loom.util.*;
-import org.gradle.api.*;
+import org.gradle.api.Plugin;
+import org.gradle.api.Project;
+import org.gradle.api.Task;
+import org.gradle.api.UnknownTaskException;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
-import org.gradle.api.artifacts.PublishArtifact;
 import org.gradle.api.artifacts.component.ModuleComponentIdentifier;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
 import org.gradle.api.artifacts.result.DependencyResult;
 import org.gradle.api.artifacts.result.ResolvedDependencyResult;
 import org.gradle.api.attributes.Attribute;
-import org.gradle.api.component.Artifact;
-import org.gradle.api.internal.artifacts.dsl.FileSystemPublishArtifact;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginConvention;
-import org.gradle.api.provider.Provider;
 import org.gradle.api.publish.Publication;
 import org.gradle.api.publish.PublishingExtension;
 import org.gradle.api.publish.maven.MavenPublication;
@@ -83,6 +82,7 @@ public class AbstractPlugin implements Plugin<Project> {
 
 		// Apply default plugins
 		project.apply(ImmutableMap.of("plugin", "java"));
+		project.apply(ImmutableMap.of("plugin", "java-library"));
 		project.apply(ImmutableMap.of("plugin", "eclipse"));
 		project.apply(ImmutableMap.of("plugin", "idea"));
 
@@ -108,6 +108,7 @@ public class AbstractPlugin implements Plugin<Project> {
 
 		Configuration includeConfig = project.getConfigurations().maybeCreate(Constants.INCLUDE);
 		includeConfig.setTransitive(false); // Dont get transitive deps
+		project.getConfigurations().getByName("runtime").extendsFrom(includeConfig);
 
 		Configuration mappingsConfig = project.getConfigurations().maybeCreate(Constants.MAPPINGS);
 		Configuration remappedConfig = project.getConfigurations().maybeCreate("remapped");
@@ -146,6 +147,15 @@ public class AbstractPlugin implements Plugin<Project> {
 		project.getDependencies().attributesSchema(attributesSchema -> attributesSchema.attribute(artifactType));
 
 		ProjectHolder.setProject(project);
+
+		// sets all dependencies to be remapped
+//        project.getConfigurations().all((configuration) -> {
+//            project.afterEvaluate((p) -> {
+//                if (configuration.getName().equals("compile") && configuration.isCanBeResolved()) {
+//                    configuration.getAttributes().attribute(debofAttribute, true);
+//                }
+//            });
+//        });
 
 		project.getDependencies().registerTransform(DebofTransformer.class, spec -> {
 			spec.getFrom().attribute(debofAttribute, false).attribute(artifactType, "jar");
@@ -331,10 +341,6 @@ public class AbstractPlugin implements Plugin<Project> {
 				AbstractArchiveTask jarTask = (AbstractArchiveTask) project1.getTasks().getByName("jar");
 				RemapJarTask remapJarTask = (RemapJarTask) project1.getTasks().findByName("remapJar");
 
-				project1.artifacts((artifactHandler -> {
-					PublishArtifact remapped = artifactHandler.add("remapped", remapJarTask);
-				}));
-
 				assert remapJarTask != null;
 				if (!remapJarTask.getInput().isPresent()) {
 					remapJarTask.getArchiveClassifier().set("remapped");
@@ -343,20 +349,30 @@ public class AbstractPlugin implements Plugin<Project> {
 
 				remapJarTask.getAddNestedDependencies().set(true);
 
-				remapJarTask.doLast(task -> project1.getArtifacts().add("archives", remapJarTask.getArchiveFile()));
+				ArtifactRemover.removeArtifacts(project1, jarTask, true);
+				project1.artifacts((artifactHandler -> {
+//					artifactHandler.add(Dependency.DEFAULT_CONFIGURATION, remapJarTask);
+//					artifactHandler.add(JavaPlugin.API_ELEMENTS_CONFIGURATION_NAME, jarTask);
+					artifactHandler.add(JavaPlugin.API_CONFIGURATION_NAME, jarTask);
+					artifactHandler.add(JavaPlugin.RUNTIME_ELEMENTS_CONFIGURATION_NAME, remapJarTask);
+					artifactHandler.add(Dependency.ARCHIVES_CONFIGURATION, remapJarTask);
+				}));
+
+
+//				remapJarTask.doLast(task -> project1.getArtifacts().add("archives", remapJarTask.getArchiveFile()));
 				remapJarTask.dependsOn(project1.getTasks().getByName("jar"));
 				project1.getTasks().getByName("build").dependsOn(remapJarTask);
 
 				Map<Project, Set<Task>> taskMap = project.getAllTasks(true);
-				for (Map.Entry<Project, Set<Task>> entry : taskMap.entrySet()) {
-					Set<Task> taskSet = entry.getValue();
-					for (Task task : taskSet) {
-						if (task instanceof RemapJarTask && ((RemapJarTask) task).getAddNestedDependencies().get()) {
-							//Run all the sub project remap jars tasks before the root projects jar, this is to allow us to include projects
-							NestedJars.getRequiredTasks(project1).forEach(task::dependsOn);
-						}
-					}
-				}
+//				for (Map.Entry<Project, Set<Task>> entry : taskMap.entrySet()) {
+//					Set<Task> taskSet = entry.getValue();
+//					for (Task task : taskSet) {
+//						if (task instanceof RemapJarTask && ((RemapJarTask) task).getAddNestedDependencies().get()) {
+//							//Run all the sub project remap jars tasks before the root projects jar, this is to allow us to include projects
+//							NestedJars.getRequiredTasks(project1).forEach(task::dependsOn);
+//						}
+//					}
+//				}
 
 				try {
 					AbstractArchiveTask sourcesTask = (AbstractArchiveTask) project1.getTasks().getByName("sourcesJar");

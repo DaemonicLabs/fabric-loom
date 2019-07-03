@@ -35,6 +35,9 @@ import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.PathSensitive;
 import org.gradle.api.tasks.PathSensitivity;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.zeroturnaround.zip.ZipUtil;
 
 import java.io.File;
 import java.io.IOException;
@@ -50,6 +53,7 @@ public abstract class DebofTransformer implements TransformAction<DebofTransform
 
 	@Override
 	public void transform(TransformOutputs outputs) {
+		Logger logger = LoggerFactory.getLogger(DebofTransformer.class);
 		ConfigurableFileCollection mappingsFileCollection = getParameters().getMappings();
 		File mappingsFile = mappingsFileCollection.iterator().next(); //.getAsFile().get();
 		FileCollection dependencies = getDependencies();
@@ -58,13 +62,13 @@ public abstract class DebofTransformer implements TransformAction<DebofTransform
 
 		Project project =  ProjectHolder.getProject();
 
-		project.getLogger().lifecycle("Hello this seems to work!");
-		project.getLogger().lifecycle("using mappings: " + mappingsFile.toString());
+		logger.info("Project: " + project.getDisplayName());
+		logger.info("Hello this seems to work!");
+		logger.info("using mappings: " + mappingsFile.toString());
 
 //		if(true){
 //			throw new RuntimeException("this works");
 //		}
-
 
 		try {
 			String fileName = inputFile.getName();
@@ -74,14 +78,19 @@ public abstract class DebofTransformer implements TransformAction<DebofTransform
 			throw new RuntimeException("Failed to remap " + inputFile.getName(), e);
 		}
 
-		project.getLogger().lifecycle("remapping dependencies");
+
+		logger.info("remapping dependencies");
 		for(File depFile : dependencies) {
-			try {
-				String fileName = depFile.getName();
-				String nameWithoutExtension = fileName.substring(0, fileName.length() - 4);
-				ModProcessor.remapJar2(depFile, outputs.file(nameWithoutExtension + "-remapped.jar"), mappingsFile, project);
-			} catch (IOException e) {
-				throw new RuntimeException("Failed to remap " + depFile.getName(), e);
+			if (ZipUtil.containsEntry(depFile, "fabric.mod.json")) {
+				try {
+					String fileName = depFile.getName();
+					String nameWithoutExtension = fileName.substring(0, fileName.length() - 4);
+					ModProcessor.remapJar2(depFile, outputs.file(nameWithoutExtension + "-remapped.jar"), mappingsFile, project);
+				} catch (IOException e) {
+					throw new RuntimeException("Failed to remap " + depFile.getName(), e);
+				}
+			} else {
+				logger.info("skipping " + depFile);
 			}
 		}
 

@@ -30,12 +30,13 @@ import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.OutputFile;
 
 import java.io.File;
+import java.util.Collection;
 
 public abstract class AbstractDecompileTask extends AbstractLoomTask {
     private Object input;
     private Object output;
     private Object lineMapFile;
-    private Object libraries;
+    private Collection<File> libraries;
 
     //@formatter:off
     @InputFile
@@ -46,6 +47,6 @@ public abstract class AbstractDecompileTask extends AbstractLoomTask {
     public void setInput(Object input) { this.input = input; }
     public void setOutput(Object output) { this.output = output; }
     public void setLineMapFile(Object lineMapFile) { this.lineMapFile = lineMapFile; }
-    public void setLibraries(Object libraries) { this.libraries = libraries; }
+    public void setLibraries(Collection<File> libraries) { this.libraries = libraries; }
     //@formatter:on
 }

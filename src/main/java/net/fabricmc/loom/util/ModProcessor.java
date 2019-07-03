@@ -138,6 +138,7 @@ public class ModProcessor {
 		String fromM = "intermediary";
 		String toM = "named";
 
+		// TODO: pass mapped minecraft via parameters
 		MinecraftMappedProvider mappedProvider = extension.getMinecraftMappedProvider();
 		MappingsProvider mappingsProvider = extension.getMappingsProvider();
 
