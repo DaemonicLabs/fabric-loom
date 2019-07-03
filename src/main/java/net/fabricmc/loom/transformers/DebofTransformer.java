@@ -27,11 +27,9 @@ package net.fabricmc.loom.transformers;
 import net.fabricmc.loom.util.ProjectHolder;
 import net.fabricmc.loom.util.ModProcessor;
 import org.gradle.api.Project;
-import org.gradle.api.artifacts.transform.InputArtifact;
-import org.gradle.api.artifacts.transform.TransformAction;
-import org.gradle.api.artifacts.transform.TransformOutputs;
-import org.gradle.api.artifacts.transform.TransformParameters;
+import org.gradle.api.artifacts.transform.*;
 import org.gradle.api.file.ConfigurableFileCollection;
+import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.FileSystemLocation;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.InputFiles;
@@ -47,10 +45,14 @@ public abstract class DebofTransformer implements TransformAction<DebofTransform
 	@InputArtifact
 	public abstract Provider<FileSystemLocation> getInput();
 
+	@InputArtifactDependencies
+	public abstract FileCollection getDependencies();
+
 	@Override
 	public void transform(TransformOutputs outputs) {
 		ConfigurableFileCollection mappingsFileCollection = getParameters().getMappings();
 		File mappingsFile = mappingsFileCollection.iterator().next(); //.getAsFile().get();
+		FileCollection dependencies = getDependencies();
 
 		File inputFile = getInput().get().getAsFile();
 
@@ -72,7 +74,18 @@ public abstract class DebofTransformer implements TransformAction<DebofTransform
 			throw new RuntimeException("Failed to remap " + inputFile.getName(), e);
 		}
 
-		outputs.file(getInput());
+		project.getLogger().lifecycle("remapping dependencies");
+		for(File depFile : dependencies) {
+			try {
+				String fileName = depFile.getName();
+				String nameWithoutExtension = fileName.substring(0, fileName.length() - 4);
+				ModProcessor.remapJar2(depFile, outputs.file(nameWithoutExtension + "-remapped.jar"), mappingsFile, project);
+			} catch (IOException e) {
+				throw new RuntimeException("Failed to remap " + depFile.getName(), e);
+			}
+		}
+
+//		outputs.file(getInput());
 	}
 
 	public interface Parameters extends TransformParameters {

@@ -254,7 +254,9 @@ public class LoomGradleExtension {
 	}
 
 	public ModuleDependency debof(ModuleDependency dependency){
-		dependency.attributes(ac -> ac.attribute(debofAttribute, true));
+		dependency.attributes(ac -> {
+		    ac.attribute(debofAttribute, true);
+        });
 		return dependency;
 	}
 
