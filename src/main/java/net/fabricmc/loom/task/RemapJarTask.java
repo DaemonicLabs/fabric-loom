@@ -74,14 +74,17 @@ public class RemapJarTask extends Jar {
         input = getProject().getObjects().fileProperty();
         addNestedDependencies = getProject().getObjects().property(Boolean.class);
 
-//		if (getAddNestedDependencies().get()) {
         Project project = getProject();
         Configuration includeConfig = project.getConfigurations().maybeCreate(Constants.INCLUDE);
         getMetaInf().into("jars", (cpSpec) -> {
             cpSpec.from(includeConfig);
             cpSpec.eachFile((fileCopyDetails) -> {
+                if (!getAddNestedDependencies().get()) {
+                    fileCopyDetails.exclude();
+                    return;
+                }
                 File file = fileCopyDetails.getFile();
-                project.getLogger().lifecycle("verifying nested jar: " + file);
+                project.getLogger().lifecycle("processing nested jar: " + file);
                 ModuleVersionIdentifier dependency = null;
                 for (ResolvedArtifact artifact : includeConfig.getResolvedConfiguration().getResolvedArtifacts()) {
                     if (file == artifact.getFile()) {
@@ -125,7 +128,6 @@ public class RemapJarTask extends Jar {
                 nestedFiles.add(file);
             });
         });
-//		}
     }
 
     private static String getMod(ModuleVersionIdentifier dependency) {
