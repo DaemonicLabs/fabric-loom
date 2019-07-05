@@ -32,6 +32,7 @@ import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.FileSystemLocation;
 import org.gradle.api.provider.Provider;
+import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.PathSensitive;
 import org.gradle.api.tasks.PathSensitivity;
@@ -108,6 +109,10 @@ public abstract class DebofTransformer implements TransformAction<DebofTransform
 
 		@InputFiles
 		ConfigurableFileCollection getMappings();
+
+		@Input
+		String getImplementationVersion();
+		void setImplementationVersion(String value);
 	}
 
 }

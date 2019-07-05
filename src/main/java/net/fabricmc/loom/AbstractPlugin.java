@@ -80,6 +80,7 @@ public class AbstractPlugin implements Plugin<Project> {
 	public void apply(Project target) {
 		this.project = target;
 
+		String implementationVersion = AbstractPlugin.class.getPackage().getImplementationVersion();
 		project.getLogger().lifecycle("Fabric Loom: " + AbstractPlugin.class.getPackage().getImplementationVersion());
 
 		// Apply default plugins
@@ -161,7 +162,10 @@ public class AbstractPlugin implements Plugin<Project> {
 		project.getDependencies().registerTransform(DebofTransformer.class, spec -> {
 			spec.getFrom().attribute(debofAttribute, false).attribute(artifactType, "jar");
 			spec.getTo().attribute(debofAttribute, true).attribute(artifactType, "jar");
-			spec.parameters(parameters -> parameters.getMappings().from(mappingsConfig));
+			spec.parameters(parameters -> {
+				parameters.getMappings().from(mappingsConfig);
+				parameters.setImplementationVersion(implementationVersion);
+			});
 		});
 
 		project.afterEvaluate((p) -> {

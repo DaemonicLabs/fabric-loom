@@ -14,7 +14,7 @@ group = 'net.fabricmc'
 archivesBaseName = project.name
 version = '0.2.5-DEV'
 
-def build = "local"
+def build = "local, timestamp: " + System.currentTimeSeconds()
 def ENV = System.getenv()
 if (ENV.BUILD_NUMBER) {
 	build = "jenkins #${ENV.BUILD_NUMBER}"
