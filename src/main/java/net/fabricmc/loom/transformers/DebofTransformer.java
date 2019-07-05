@@ -62,9 +62,9 @@ public abstract class DebofTransformer implements TransformAction<DebofTransform
 
 		Project project =  ProjectHolder.getProject();
 
-		logger.info("Project: " + project.getDisplayName());
-		logger.info("Hello this seems to work!");
-		logger.info("using mappings: " + mappingsFile.toString());
+		logger.warn("Project: " + project.getDisplayName());
+		logger.warn("Hello this seems to work!");
+		logger.warn("using mappings: " + mappingsFile.toString());
 
 //		if(true){
 //			throw new RuntimeException("this works");
@@ -79,8 +79,12 @@ public abstract class DebofTransformer implements TransformAction<DebofTransform
 		}
 
 
-		logger.info("remapping dependencies");
+		logger.warn("remapping dependencies");
 		for(File depFile : dependencies) {
+			if(depFile.getName().endsWith("-remapped.jar")) {
+				logger.warn("skipping already remapped " + depFile);
+				continue;
+			}
 			if (ZipUtil.containsEntry(depFile, "fabric.mod.json")) {
 				try {
 					String fileName = depFile.getName();
@@ -90,7 +94,7 @@ public abstract class DebofTransformer implements TransformAction<DebofTransform
 					throw new RuntimeException("Failed to remap " + depFile.getName(), e);
 				}
 			} else {
-				logger.info("skipping " + depFile);
+				logger.warn("skipping " + depFile);
 			}
 		}
 

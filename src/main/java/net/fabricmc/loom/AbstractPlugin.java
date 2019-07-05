@@ -81,7 +81,6 @@ public class AbstractPlugin implements Plugin<Project> {
 		project.getLogger().lifecycle("Fabric Loom: " + AbstractPlugin.class.getPackage().getImplementationVersion());
 
 		// Apply default plugins
-		project.apply(ImmutableMap.of("plugin", "java"));
 		project.apply(ImmutableMap.of("plugin", "java-library"));
 		project.apply(ImmutableMap.of("plugin", "eclipse"));
 		project.apply(ImmutableMap.of("plugin", "idea"));
@@ -111,7 +110,6 @@ public class AbstractPlugin implements Plugin<Project> {
 		project.getConfigurations().getByName("runtime").extendsFrom(includeConfig);
 
 		Configuration mappingsConfig = project.getConfigurations().maybeCreate(Constants.MAPPINGS);
-		Configuration remappedConfig = project.getConfigurations().maybeCreate("remapped");
 
 		for (RemappedConfigurationEntry entry : Constants.MOD_COMPILE_ENTRIES) {
 			Configuration compileModsConfig = project.getConfigurations().maybeCreate(entry.getSourceConfiguration());

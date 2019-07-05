@@ -34,9 +34,7 @@ import org.cadixdev.mercury.Mercury;
 import org.gradle.api.Action;
 import org.gradle.api.Project;
 import org.gradle.api.UnknownDomainObjectException;
-import org.gradle.api.artifacts.Configuration;
-import org.gradle.api.artifacts.Dependency;
-import org.gradle.api.artifacts.ModuleDependency;
+import org.gradle.api.artifacts.*;
 import org.gradle.api.artifacts.component.ComponentIdentifier;
 import org.gradle.api.artifacts.component.ModuleComponentIdentifier;
 import org.gradle.api.artifacts.result.ResolvedArtifactResult;
@@ -255,9 +253,24 @@ public class LoomGradleExtension {
 
 	public ModuleDependency debof(ModuleDependency dependency){
 		dependency.attributes(ac -> {
-		    ac.attribute(debofAttribute, true);
-        });
+			ac.attribute(debofAttribute, true);
+		});
 		return dependency;
 	}
+
+	public ExternalModuleDependency debof(ExternalModuleDependency dependency){
+		dependency.attributes(ac -> {
+			ac.attribute(debofAttribute, true);
+		});
+		return dependency;
+	}
+
+	// TODO: handle SelfResolvingDependency
+//	public ExternalModuleDependency debof(SelfResolvingDependency dependency){
+//		dependency.attributes(ac -> {
+//			ac.attribute(debofAttribute, true);
+//		});
+//		return dependency;
+//	}
 
 }
