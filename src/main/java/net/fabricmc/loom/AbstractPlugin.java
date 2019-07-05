@@ -30,7 +30,7 @@ import net.fabricmc.loom.providers.MappingsProvider;
 import net.fabricmc.loom.providers.MinecraftProvider;
 import net.fabricmc.loom.task.RemapJarTask;
 import net.fabricmc.loom.task.RemapSourcesJarTask;
-import net.fabricmc.loom.transformers.DebofTransformer;
+import net.fabricmc.loom.transformers.DeobfTransformer;
 import net.fabricmc.loom.util.*;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
@@ -38,8 +38,6 @@ import org.gradle.api.Task;
 import org.gradle.api.UnknownTaskException;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
-import org.gradle.api.artifacts.DependencySet;
-import org.gradle.api.artifacts.ExternalModuleDependency;
 import org.gradle.api.artifacts.component.ModuleComponentIdentifier;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
 import org.gradle.api.artifacts.result.DependencyResult;
@@ -159,7 +157,7 @@ public class AbstractPlugin implements Plugin<Project> {
 //            });
 //        });
 
-		project.getDependencies().registerTransform(DebofTransformer.class, spec -> {
+		project.getDependencies().registerTransform(DeobfTransformer.class, spec -> {
 			spec.getFrom().attribute(debofAttribute, false).attribute(artifactType, "jar");
 			spec.getTo().attribute(debofAttribute, true).attribute(artifactType, "jar");
 			spec.parameters(parameters -> {

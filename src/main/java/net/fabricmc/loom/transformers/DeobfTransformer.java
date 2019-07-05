@@ -43,7 +43,7 @@ import org.zeroturnaround.zip.ZipUtil;
 import java.io.File;
 import java.io.IOException;
 
-public abstract class DebofTransformer implements TransformAction<DebofTransformer.Parameters> {
+public abstract class DeobfTransformer implements TransformAction<DeobfTransformer.Parameters> {
 
 	@PathSensitive(PathSensitivity.ABSOLUTE)
 	@InputArtifact
@@ -54,7 +54,7 @@ public abstract class DebofTransformer implements TransformAction<DebofTransform
 
 	@Override
 	public void transform(TransformOutputs outputs) {
-		Logger logger = LoggerFactory.getLogger(DebofTransformer.class);
+		Logger logger = LoggerFactory.getLogger(DeobfTransformer.class);
 		ConfigurableFileCollection mappingsFileCollection = getParameters().getMappings();
 		File mappingsFile = mappingsFileCollection.iterator().next(); //.getAsFile().get();
 		FileCollection dependencies = getDependencies();
@@ -74,7 +74,7 @@ public abstract class DebofTransformer implements TransformAction<DebofTransform
 		try {
 			String fileName = inputFile.getName();
 			String nameWithoutExtension = fileName.substring(0, fileName.length() - 4);
-			ModProcessor.remapJar2(inputFile, outputs.file(nameWithoutExtension + "-remapped.jar"), mappingsFile, project);
+			ModProcessor.remapJar2(inputFile, outputs.file(nameWithoutExtension + "-deobf.jar"), mappingsFile, project);
 		} catch (IOException e) {
 			throw new RuntimeException("Failed to remap " + inputFile.getName(), e);
 		}
@@ -84,7 +84,7 @@ public abstract class DebofTransformer implements TransformAction<DebofTransform
 		for(File depFile : dependencies) {
 
 			// TODO: add marker file in jar or similar
-			if(depFile.getName().endsWith("-remapped.jar")) {
+			if(depFile.getName().endsWith("-deobf.jar")) {
 				logger.warn("skipping already remapped " + depFile);
 				continue;
 			}
@@ -92,7 +92,7 @@ public abstract class DebofTransformer implements TransformAction<DebofTransform
 				try {
 					String fileName = depFile.getName();
 					String nameWithoutExtension = fileName.substring(0, fileName.length() - 4);
-					ModProcessor.remapJar2(depFile, outputs.file(nameWithoutExtension + "-remapped.jar"), mappingsFile, project);
+					ModProcessor.remapJar2(depFile, outputs.file(nameWithoutExtension + "-deobf.jar"), mappingsFile, project);
 				} catch (IOException e) {
 					throw new RuntimeException("Failed to remap " + depFile.getName(), e);
 				}

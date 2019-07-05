@@ -251,14 +251,14 @@ public class LoomGradleExtension {
 		return refmapName;
 	}
 
-	public ModuleDependency debof(ModuleDependency dependency){
+	public ModuleDependency deobf(ModuleDependency dependency){
 		dependency.attributes(ac -> {
 			ac.attribute(debofAttribute, true);
 		});
 		return dependency;
 	}
 
-	public ExternalModuleDependency debof(ExternalModuleDependency dependency){
+	public ExternalModuleDependency deobf(ExternalModuleDependency dependency){
 		dependency.attributes(ac -> {
 			ac.attribute(debofAttribute, true);
 		});
