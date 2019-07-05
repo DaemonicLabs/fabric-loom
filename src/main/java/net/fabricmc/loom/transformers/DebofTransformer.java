@@ -81,6 +81,8 @@ public abstract class DebofTransformer implements TransformAction<DebofTransform
 
 		logger.warn("remapping dependencies");
 		for(File depFile : dependencies) {
+
+			// TODO: add marker file in jar or similar
 			if(depFile.getName().endsWith("-remapped.jar")) {
 				logger.warn("skipping already remapped " + depFile);
 				continue;

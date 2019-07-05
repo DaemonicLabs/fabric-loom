@@ -38,6 +38,8 @@ import org.gradle.api.Task;
 import org.gradle.api.UnknownTaskException;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
+import org.gradle.api.artifacts.DependencySet;
+import org.gradle.api.artifacts.ExternalModuleDependency;
 import org.gradle.api.artifacts.component.ModuleComponentIdentifier;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
 import org.gradle.api.artifacts.result.DependencyResult;
@@ -110,6 +112,7 @@ public class AbstractPlugin implements Plugin<Project> {
 		project.getConfigurations().getByName("runtime").extendsFrom(includeConfig);
 
 		Configuration mappingsConfig = project.getConfigurations().maybeCreate(Constants.MAPPINGS);
+		Configuration fabricInstallConfig = project.getConfigurations().maybeCreate("fabricInstall");
 
 		for (RemappedConfigurationEntry entry : Constants.MOD_COMPILE_ENTRIES) {
 			Configuration compileModsConfig = project.getConfigurations().maybeCreate(entry.getSourceConfiguration());
@@ -159,6 +162,13 @@ public class AbstractPlugin implements Plugin<Project> {
 			spec.getFrom().attribute(debofAttribute, false).attribute(artifactType, "jar");
 			spec.getTo().attribute(debofAttribute, true).attribute(artifactType, "jar");
 			spec.parameters(parameters -> parameters.getMappings().from(mappingsConfig));
+		});
+
+		project.afterEvaluate((p) -> {
+			Set<File> files = fabricInstallConfig.resolve();
+			for(File file : files) {
+				ModProcessor.readInstallerJson(file, p);
+			}
 		});
 
 		configureIDEs();

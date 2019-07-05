@@ -193,8 +193,8 @@ public class ModProcessor {
 		MinecraftMappedProvider mappedProvider = extension.getMinecraftMappedProvider();
 		MappingsProvider mappingsProvider = extension.getMappingsProvider();
 
-		File mappingsFile = mappingsProvider.MAPPINGS_TINY;
-		Path mappings = mappingsFile.toPath();
+//		File mappingsFile = mappingsProvider.MAPPINGS_TINY;
+//		Path mappings = mappingsFile.toPath();
 		Path inputPath = input.getAbsoluteFile().toPath();
 		Path mc = mappedProvider.MINECRAFT_INTERMEDIARY_JAR.toPath();
 		Path[] mcDeps = mappedProvider.getMapperPaths().stream()
@@ -237,7 +237,7 @@ public class ModProcessor {
 		}
 	}
 
-	static void readInstallerJson(File file, Project project){
+	public static void readInstallerJson(File file, Project project){
 		try {
 			LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 			String launchMethod = extension.getLoaderLaunchMethod();
