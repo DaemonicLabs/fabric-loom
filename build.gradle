@@ -1,5 +1,5 @@
 plugins {
-	id 'java'
+	id 'java-library'
 	id 'maven-publish'
 	id 'java-gradle-plugin'
 	id 'idea'
@@ -29,7 +29,7 @@ repositories {
 }
 
 dependencies {
-	implementation gradleApi()
+	api gradleApi()
 
 	// libraries
 	implementation ('commons-io:commons-io:2.6')
