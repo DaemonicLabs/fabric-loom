@@ -67,26 +67,25 @@ public class LoomGradlePlugin extends AbstractPlugin {
 
 		tasks.register("remapJar", RemapJarTask.class);
 
-		tasks.register("genSourcesDecompile", FernFlowerTask.class, t -> {
-			t.getOutputs().upToDateWhen((o) -> false);
-		});
+		if(isRootProject(project)) {
+			AbstractDecompileTask decompileTask = (AbstractDecompileTask) tasks.create("genSourcesDecompile", FernFlowerTask.class, t -> {
+				t.getOutputs().upToDateWhen((o) -> false);
+			});
 
-		tasks.register("genSourcesRemapLineNumbers", RemapLineNumbersTask.class, t -> {
-			t.getOutputs().upToDateWhen((o) -> false);
-		});
+			RemapLineNumbersTask remapLineNumbersTask = (RemapLineNumbersTask) tasks.create("genSourcesRemapLineNumbers", RemapLineNumbersTask.class, t -> {
+				t.dependsOn(decompileTask);
+				t.getOutputs().upToDateWhen((o) -> false);
+			});
 
-		tasks.register("genSources", t -> {
-			t.setGroup("fabric");
-			t.getOutputs().upToDateWhen((o) -> false);
-		});
+			tasks.create("genSources", t -> {
+				t.setGroup("fabric");
+				t.dependsOn(remapLineNumbersTask);
+				t.dependsOn(decompileTask);
+				t.getOutputs().upToDateWhen((o) -> false);
+			});
+		}
 
 		project.afterEvaluate((p) -> {
-			AbstractDecompileTask decompileTask = (AbstractDecompileTask) p.getTasks().getByName("genSourcesDecompile");
-			RemapLineNumbersTask remapLineNumbersTask = (RemapLineNumbersTask) p.getTasks().getByName("genSourcesRemapLineNumbers");
-			Task genSourcesTask = p.getTasks().getByName("genSources");
-
-			genSourcesTask.dependsOn(remapLineNumbersTask);
-			remapLineNumbersTask.dependsOn(decompileTask);
 
 			Project project = this.getProject();
 			LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
@@ -97,28 +96,33 @@ public class LoomGradlePlugin extends AbstractPlugin {
 			File sourcesJar = getMappedByproduct(project, "-sources.jar");
 			File linemapFile = getMappedByproduct(project, "-sources.lmap");
 
-			decompileTask.setInput(mappedJar);
-			decompileTask.setOutput(sourcesJar);
-			decompileTask.setLineMapFile(linemapFile);
-			decompileTask.setLibraries(libraryProvider.getLibraries());
-
-			remapLineNumbersTask.setInput(mappedJar);
-			remapLineNumbersTask.setLineMapFile(linemapFile);
-			remapLineNumbersTask.setOutput(linemappedJar);
-
 			Path mappedJarPath = mappedJar.toPath();
 			Path linemappedJarPath = linemappedJar.toPath();
+			if(isRootProject(p)) {
+				AbstractDecompileTask decompileTask = (AbstractDecompileTask) p.getTasks().getByName("genSourcesDecompile");
+				RemapLineNumbersTask remapLineNumbersTask = (RemapLineNumbersTask) p.getTasks().getByName("genSourcesRemapLineNumbers");
+				Task genSourcesTask = p.getTasks().getByName("genSources");
 
-			genSourcesTask.doLast((tt) -> {
-				if (Files.exists(linemappedJarPath)) {
-					try {
-						Files.deleteIfExists(mappedJarPath);
-						Files.copy(linemappedJarPath, mappedJarPath);
-					} catch (IOException e) {
-						throw new RuntimeException(e);
+				decompileTask.setInput(mappedJar);
+				decompileTask.setOutput(sourcesJar);
+				decompileTask.setLineMapFile(linemapFile);
+				decompileTask.setLibraries(libraryProvider.getLibraries());
+
+				remapLineNumbersTask.setInput(mappedJar);
+				remapLineNumbersTask.setLineMapFile(linemapFile);
+				remapLineNumbersTask.setOutput(linemappedJar);
+
+				genSourcesTask.doLast((tt) -> {
+					if (Files.exists(linemappedJarPath)) {
+						try {
+							Files.deleteIfExists(mappedJarPath);
+							Files.copy(linemappedJarPath, mappedJarPath);
+						} catch (IOException e) {
+							throw new RuntimeException(e);
+						}
 					}
-				}
-			});
+				});
+			}
 		});
 
 		tasks.register("downloadAssets", DownloadAssetsTask.class);

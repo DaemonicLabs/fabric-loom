@@ -65,7 +65,8 @@ public class AbstractPlugin implements Plugin<Project> {
 	protected Project project;
 
 	public static boolean isRootProject(Project project) {
-		return project.getRootProject() == project;
+//		return project.getRootProject() == project;
+		return project.getRootProject() == project || !project.getParent().getPluginManager().hasPlugin("moe.nikky.fabric-loom");
 	}
 
 	private void extendsFrom(String a, String b) {
