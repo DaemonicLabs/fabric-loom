@@ -251,24 +251,32 @@ public class LoomGradleExtension {
 		return refmapName;
 	}
 
-	public ModuleDependency deobf(ModuleDependency dependency){
-		dependency.attributes(ac -> {
-			ac.attribute(debofAttribute, true);
-		});
-		return dependency;
-	}
-
-	public ModuleDependency deobf(Dependency dependency){
+	public Object deobf(Object dependency) {
 		ModuleDependency moduleDep = (ModuleDependency) dependency;
-		return deobf(moduleDep);
-	}
-
-	public ExternalModuleDependency deobf(ExternalModuleDependency dependency){
-		dependency.attributes(ac -> {
+		moduleDep.attributes(ac -> {
 			ac.attribute(debofAttribute, true);
 		});
 		return dependency;
 	}
+//
+//	public ModuleDependency deobf(ModuleDependency dependency){
+//		dependency.attributes(ac -> {
+//			ac.attribute(debofAttribute, true);
+//		});
+//		return dependency;
+//	}
+//
+//	public ModuleDependency deobf(Dependency dependency){
+//
+//		return deobf(moduleDep);
+//	}
+//
+//	public ExternalModuleDependency deobf(ExternalModuleDependency dependency){
+//		dependency.attributes(ac -> {
+//			ac.attribute(debofAttribute, true);
+//		});
+//		return dependency;
+//	}
 
 	// TODO: handle SelfResolvingDependency
 //	public ExternalModuleDependency debof(SelfResolvingDependency dependency){

@@ -31,7 +31,7 @@ repositories {
 }
 
 dependencies {
-	api gradleApi()
+	implementation gradleApi()
 
 	// libraries
 	implementation ('commons-io:commons-io:2.6')

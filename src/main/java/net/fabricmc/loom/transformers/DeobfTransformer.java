@@ -77,6 +77,9 @@ public abstract class DeobfTransformer implements TransformAction<DeobfTransform
 			ModProcessor.remapJar2(inputFile, outputs.file(nameWithoutExtension + "-deobf.jar"), mappingsFile, project);
 		} catch (IOException e) {
 			throw new RuntimeException("Failed to remap " + inputFile.getName(), e);
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new RuntimeException("Failed to remap " + inputFile.getName(), e);
 		}
 
 
@@ -95,6 +98,9 @@ public abstract class DeobfTransformer implements TransformAction<DeobfTransform
 					ModProcessor.remapJar2(depFile, outputs.file(nameWithoutExtension + "-deobf.jar"), mappingsFile, project);
 				} catch (IOException e) {
 					throw new RuntimeException("Failed to remap " + depFile.getName(), e);
+				} catch (Exception e) {
+					e.printStackTrace();
+					throw new RuntimeException("Failed to remap " + inputFile.getName(), e);
 				}
 			} else {
 				logger.warn("skipping " + depFile);
