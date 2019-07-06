@@ -10,14 +10,16 @@ plugins {
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
-group = 'net.fabricmc'
+group = 'moe.nikky'
 archivesBaseName = project.name
-version = '0.2.5-DEV'
+version = '0.2.6-SNAPSHOT'
 
 def build = "local, timestamp: " + System.currentTimeSeconds()
 def ENV = System.getenv()
 if (ENV.BUILD_NUMBER) {
 	build = "jenkins #${ENV.BUILD_NUMBER}"
+} else {
+	version = '0.2.6-DEV'
 }
 
 repositories {
@@ -85,7 +87,7 @@ license {
 gradlePlugin {
 	plugins {
 		register("fabricLoom") {
-			id = "fabric-loom"
+			id = "moe.nikky.fabric-loom"
 			implementationClass = "net.fabricmc.loom.LoomGradlePlugin"
 		}
 	}
