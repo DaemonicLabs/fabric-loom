@@ -351,9 +351,11 @@ public class AbstractPlugin implements Plugin<Project> {
 				AbstractArchiveTask jarTask = (AbstractArchiveTask) project1.getTasks().getByName("jar");
 				RemapJarTask remapJarTask = (RemapJarTask) project1.getTasks().findByName("remapJar");
 
+				jarTask.getArchiveClassifier().set("dev");
+
 				assert remapJarTask != null;
 				if (!remapJarTask.getInput().isPresent()) {
-					remapJarTask.getArchiveClassifier().set("remapped");
+//					remapJarTask.getArchiveClassifier().set("remapped");
 					remapJarTask.getInput().set(jarTask.getArchiveFile());
 				}
 
@@ -363,7 +365,8 @@ public class AbstractPlugin implements Plugin<Project> {
 				project1.artifacts((artifactHandler -> {
 //					artifactHandler.add(Dependency.DEFAULT_CONFIGURATION, remapJarTask);
 //					artifactHandler.add(JavaPlugin.API_ELEMENTS_CONFIGURATION_NAME, jarTask);
-					artifactHandler.add(JavaPlugin.API_CONFIGURATION_NAME, jarTask);
+					artifactHandler.add(JavaPlugin.API_CONFIGURATION_NAME, remapJarTask);
+//					artifactHandler.add(JavaPlugin.API_CONFIGURATION_NAME, jarTask);
 					artifactHandler.add(JavaPlugin.RUNTIME_ELEMENTS_CONFIGURATION_NAME, remapJarTask);
 					artifactHandler.add(Dependency.ARCHIVES_CONFIGURATION, remapJarTask);
 				}));
