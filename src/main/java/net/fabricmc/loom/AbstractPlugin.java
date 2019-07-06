@@ -32,10 +32,7 @@ import net.fabricmc.loom.task.RemapJarTask;
 import net.fabricmc.loom.task.RemapSourcesJarTask;
 import net.fabricmc.loom.transformers.DeobfTransformer;
 import net.fabricmc.loom.util.*;
-import org.gradle.api.Plugin;
-import org.gradle.api.Project;
-import org.gradle.api.Task;
-import org.gradle.api.UnknownTaskException;
+import org.gradle.api.*;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.component.ModuleComponentIdentifier;
@@ -54,6 +51,7 @@ import org.gradle.api.tasks.compile.JavaCompile;
 import org.gradle.api.tasks.javadoc.Javadoc;
 import org.gradle.plugins.ide.eclipse.model.EclipseModel;
 import org.gradle.plugins.ide.idea.model.IdeaModel;
+import org.gradle.util.GradleVersion;
 
 import java.io.File;
 import java.io.IOException;
@@ -80,6 +78,12 @@ public class AbstractPlugin implements Plugin<Project> {
 
 		String implementationVersion = AbstractPlugin.class.getPackage().getImplementationVersion();
 		project.getLogger().lifecycle("Fabric Loom: " + AbstractPlugin.class.getPackage().getImplementationVersion());
+
+		GradleVersion minimum = GradleVersion.version("5.5");
+		if(GradleVersion.current().compareTo(minimum) < 0) {
+			project.getLogger().error("requires at least " + minimum + " , current version: " + GradleVersion.current());
+			throw new GradleException("requires at least " + minimum + " , current version: " + GradleVersion.current());
+		}
 
 		// Apply default plugins
 		project.apply(ImmutableMap.of("plugin", "java-library"));
@@ -391,8 +395,8 @@ public class AbstractPlugin implements Plugin<Project> {
 					AbstractArchiveTask sourcesTask = (AbstractArchiveTask) project1.getTasks().getByName("sourcesJar");
 
 					RemapSourcesJarTask remapSourcesJarTask = (RemapSourcesJarTask) project1.getTasks().findByName("remapSourcesJar");
-					remapSourcesJarTask.setInput(sourcesTask.getArchivePath());
-					remapSourcesJarTask.setOutput(sourcesTask.getArchivePath());
+					remapSourcesJarTask.setInput(sourcesTask.getArchiveFile());
+					remapSourcesJarTask.setOutput(sourcesTask.getArchiveFile());
 					remapSourcesJarTask.doLast(task -> project1.getArtifacts().add("archives", remapSourcesJarTask.getOutput()));
 					remapSourcesJarTask.dependsOn(project1.getTasks().getByName("sourcesJar"));
 					project1.getTasks().getByName("build").dependsOn(remapSourcesJarTask);
