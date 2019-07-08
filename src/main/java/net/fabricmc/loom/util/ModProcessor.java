@@ -133,7 +133,7 @@ public class ModProcessor {
 
 	static SoftReference<Mappings> mappings;
 
-	public static void remapJar2(File input, File output, File mappingsFile, Project project) throws IOException {
+	public synchronized static void remapJar2(File input, File output, File mappingsFile, Project project) throws IOException {
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 		String fromM = "intermediary";
 		String toM = "named";
