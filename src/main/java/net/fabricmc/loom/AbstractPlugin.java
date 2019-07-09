@@ -62,326 +62,332 @@ import java.util.Set;
 import java.util.function.Predicate;
 
 public class AbstractPlugin implements Plugin<Project> {
-	protected Project project;
+    protected Project project;
 
-	public static boolean isRootProject(Project project) {
+    public static boolean isRootProject(Project project) {
 //		return project.getRootProject() == project;
-		return project.getRootProject() == project || !project.getParent().getPluginManager().hasPlugin("moe.nikky.fabric-loom");
-	}
+        return project.getRootProject() == project || !project.getParent().getPluginManager().hasPlugin("moe.nikky.fabric-loom");
+    }
 
-	private void extendsFrom(String a, String b) {
-		project.getConfigurations().getByName(a).extendsFrom(project.getConfigurations().getByName(b));
-	}
+    private void extendsFrom(String a, String b) {
+        project.getConfigurations().getByName(a).extendsFrom(project.getConfigurations().getByName(b));
+    }
 
-	@Override
-	public void apply(Project target) {
-		this.project = target;
+    @Override
+    public void apply(Project target) {
+        this.project = target;
 
-		String implementationVersion = AbstractPlugin.class.getPackage().getImplementationVersion();
-		project.getLogger().lifecycle("Fabric Loom: " + AbstractPlugin.class.getPackage().getImplementationVersion());
+        String implementationVersion = AbstractPlugin.class.getPackage().getImplementationVersion();
+        project.getLogger().lifecycle("Fabric Loom: " + AbstractPlugin.class.getPackage().getImplementationVersion());
 
-		GradleVersion minimum = GradleVersion.version("5.5");
-		if(GradleVersion.current().compareTo(minimum) < 0) {
-			project.getLogger().error("requires at least " + minimum + " , current version: " + GradleVersion.current());
-			throw new GradleException("requires at least " + minimum + " , current version: " + GradleVersion.current());
-		}
+        GradleVersion minimum = GradleVersion.version("5.5");
+        if (GradleVersion.current().compareTo(minimum) < 0) {
+            project.getLogger().error("requires at least " + minimum + " , current version: " + GradleVersion.current());
+            throw new GradleException("requires at least " + minimum + " , current version: " + GradleVersion.current());
+        }
 
-		// Apply default plugins
-		project.apply(ImmutableMap.of("plugin", "java-library"));
-		project.apply(ImmutableMap.of("plugin", "eclipse"));
-		project.apply(ImmutableMap.of("plugin", "idea"));
+        // Apply default plugins
+        project.apply(ImmutableMap.of("plugin", "java-library"));
+        project.apply(ImmutableMap.of("plugin", "eclipse"));
+        project.apply(ImmutableMap.of("plugin", "idea"));
 
-		project.getExtensions().create("loom", LoomGradleExtension.class, project);
+        project.getExtensions().create("loom", LoomGradleExtension.class, project);
 
-		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
-		// Force add Mojang repository
-		addMavenRepo(target, "Mojang", "https://libraries.minecraft.net/");
+        LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
+        // Force add Mojang repository
+        addMavenRepo(target, "Mojang", "https://libraries.minecraft.net/");
 
-		Configuration modCompileClasspathConfig = project.getConfigurations().maybeCreate(Constants.MOD_COMPILE_CLASSPATH);
-		modCompileClasspathConfig.setTransitive(true);
-		Configuration modCompileClasspathMappedConfig = project.getConfigurations().maybeCreate(Constants.MOD_COMPILE_CLASSPATH_MAPPED);
-		modCompileClasspathMappedConfig.setTransitive(false);
+        Configuration modCompileClasspathConfig = project.getConfigurations().maybeCreate(Constants.MOD_COMPILE_CLASSPATH);
+        modCompileClasspathConfig.setTransitive(true);
+        Configuration modCompileClasspathMappedConfig = project.getConfigurations().maybeCreate(Constants.MOD_COMPILE_CLASSPATH_MAPPED);
+        modCompileClasspathMappedConfig.setTransitive(false);
 
-		Configuration minecraftNamedConfig = project.getConfigurations().maybeCreate(Constants.MINECRAFT_NAMED);
-		minecraftNamedConfig.setTransitive(false); // The launchers do not recurse dependencies
-		Configuration minecraftIntermediaryConfig = project.getConfigurations().maybeCreate(Constants.MINECRAFT_INTERMEDIARY);
-		minecraftIntermediaryConfig.setTransitive(false);
-		Configuration minecraftDependenciesConfig = project.getConfigurations().maybeCreate(Constants.MINECRAFT_DEPENDENCIES);
-		minecraftDependenciesConfig.setTransitive(false);
-		Configuration minecraftConfig = project.getConfigurations().maybeCreate(Constants.MINECRAFT);
-		minecraftConfig.setTransitive(false);
+        Configuration minecraftNamedConfig = project.getConfigurations().maybeCreate(Constants.MINECRAFT_NAMED);
+        minecraftNamedConfig.setTransitive(false); // The launchers do not recurse dependencies
+        Configuration minecraftIntermediaryConfig = project.getConfigurations().maybeCreate(Constants.MINECRAFT_INTERMEDIARY);
+        minecraftIntermediaryConfig.setTransitive(false);
+        Configuration minecraftDependenciesConfig = project.getConfigurations().maybeCreate(Constants.MINECRAFT_DEPENDENCIES);
+        minecraftDependenciesConfig.setTransitive(false);
+        Configuration minecraftConfig = project.getConfigurations().maybeCreate(Constants.MINECRAFT);
+        minecraftConfig.setTransitive(false);
 
-		Configuration includeConfig = project.getConfigurations().maybeCreate(Constants.INCLUDE);
-		includeConfig.setTransitive(false); // Dont get transitive deps
-		project.getConfigurations().getByName("runtime").extendsFrom(includeConfig);
+        Configuration includeConfig = project.getConfigurations().maybeCreate(Constants.INCLUDE);
+        includeConfig.setTransitive(false); // Dont get transitive deps
+        project.getConfigurations().getByName("runtime").extendsFrom(includeConfig);
 
-		Configuration mappingsConfig = project.getConfigurations().maybeCreate(Constants.MAPPINGS);
-		Configuration fabricInstallConfig = project.getConfigurations().maybeCreate("fabricInstall");
+        Configuration mappingsConfig = project.getConfigurations().maybeCreate(Constants.MAPPINGS);
+        Configuration fabricInstallConfig = project.getConfigurations().maybeCreate("fabricInstall");
 
-		for (RemappedConfigurationEntry entry : Constants.MOD_COMPILE_ENTRIES) {
-			Configuration compileModsConfig = project.getConfigurations().maybeCreate(entry.getSourceConfiguration());
-			compileModsConfig.setTransitive(true);
-			Configuration compileModsMappedConfig = project.getConfigurations().maybeCreate(entry.getRemappedConfiguration());
-			compileModsMappedConfig.setTransitive(false); // Don't get transitive deps of already remapped mods
+        for (RemappedConfigurationEntry entry : Constants.MOD_COMPILE_ENTRIES) {
+            Configuration compileModsConfig = project.getConfigurations().maybeCreate(entry.getSourceConfiguration());
+            compileModsConfig.setTransitive(true);
+            Configuration compileModsMappedConfig = project.getConfigurations().maybeCreate(entry.getRemappedConfiguration());
+            compileModsMappedConfig.setTransitive(false); // Don't get transitive deps of already remapped mods
 
-			extendsFrom(entry.getTargetConfiguration(project.getConfigurations()), entry.getRemappedConfiguration());
-			if (entry.isOnModCompileClasspath()) {
-				extendsFrom(Constants.MOD_COMPILE_CLASSPATH, entry.getSourceConfiguration());
-				extendsFrom(Constants.MOD_COMPILE_CLASSPATH_MAPPED, entry.getRemappedConfiguration());
-			}
-		}
+            extendsFrom(entry.getTargetConfiguration(project.getConfigurations()), entry.getRemappedConfiguration());
+            if (entry.isOnModCompileClasspath()) {
+                extendsFrom(Constants.MOD_COMPILE_CLASSPATH, entry.getSourceConfiguration());
+                extendsFrom(Constants.MOD_COMPILE_CLASSPATH_MAPPED, entry.getRemappedConfiguration());
+            }
+        }
 
-		extendsFrom("compile", Constants.MINECRAFT_NAMED);
-		extendsFrom("annotationProcessor", Constants.MINECRAFT_NAMED);
-		extendsFrom("annotationProcessor", Constants.MOD_COMPILE_CLASSPATH_MAPPED);
+        extendsFrom("compile", Constants.MINECRAFT_NAMED);
+        extendsFrom("annotationProcessor", Constants.MINECRAFT_NAMED);
+        extendsFrom("annotationProcessor", Constants.MOD_COMPILE_CLASSPATH_MAPPED);
 
-		extendsFrom(Constants.MINECRAFT_NAMED, Constants.MINECRAFT_DEPENDENCIES);
-		extendsFrom(Constants.MINECRAFT_INTERMEDIARY, Constants.MINECRAFT_DEPENDENCIES);
+        extendsFrom(Constants.MINECRAFT_NAMED, Constants.MINECRAFT_DEPENDENCIES);
+        extendsFrom(Constants.MINECRAFT_INTERMEDIARY, Constants.MINECRAFT_DEPENDENCIES);
 
-		extendsFrom("compile", Constants.MAPPINGS);
-		extendsFrom("annotationProcessor", Constants.MAPPINGS);
+        extendsFrom("compile", Constants.MAPPINGS);
+        extendsFrom("annotationProcessor", Constants.MAPPINGS);
 
-		Attribute artifactType = Attribute.of("artifactType", String.class);
-		Attribute debofAttribute = Attribute.of("debof", Boolean.class);
+        Attribute artifactType = Attribute.of("artifactType", String.class);
+        Attribute deobfAttribute = Attribute.of("deobf", Boolean.class);
 
-		project.getDependencies().getArtifactTypes().getByName("jar", (type) -> {
-			type.getAttributes().attribute(debofAttribute, false);
-		});
-		extension.debofAttribute = debofAttribute;
+        project.getDependencies().getArtifactTypes().getByName("jar", (type) -> {
+            type.getAttributes().attribute(deobfAttribute, false);
+        });
+        extension.debofAttribute = deobfAttribute;
 
-		project.getDependencies().attributesSchema(attributesSchema -> attributesSchema.attribute(artifactType));
+        project.getDependencies().attributesSchema(attributesSchema -> attributesSchema.attribute(artifactType));
 
-		ProjectHolder.setProject(project);
+        ProjectHolder.setProject(project);
 
-		// sets all dependencies to be remapped
-        project.getConfigurations().all((configuration) -> {
-            project.afterEvaluate((p) -> {
-                if (configuration.isCanBeResolved()) {
-                    configuration.getAttributes().attribute(debofAttribute, true);
-                }
+
+        project.getDependencies().registerTransform(DeobfTransformer.class, spec -> {
+            spec.getFrom().attribute(deobfAttribute, false).attribute(artifactType, "jar");
+            spec.getTo().attribute(deobfAttribute, true).attribute(artifactType, "jar");
+            spec.parameters(parameters -> {
+                parameters.getMappings().from(mappingsConfig);
+                parameters.setImplementationVersion(implementationVersion);
             });
         });
 
-		project.getDependencies().registerTransform(DeobfTransformer.class, spec -> {
-			spec.getFrom().attribute(debofAttribute, false).attribute(artifactType, "jar");
-			spec.getTo().attribute(debofAttribute, true).attribute(artifactType, "jar");
-			spec.parameters(parameters -> {
-				parameters.getMappings().from(mappingsConfig);
-				parameters.setImplementationVersion(implementationVersion);
-			});
+        project.afterEvaluate((p) -> {
+            Set<File> files = fabricInstallConfig.resolve();
+            for (File file : files) {
+                ModProcessor.readInstallerJson(file, p);
+            }
+        });
+
+        configureIDEs();
+        configureCompile();
+
+         // must be after configureCompile to access registered providers
+		// sets all dependencies to be remapped
+		project.getConfigurations().all((configuration) -> {
+//            project.afterEvaluate((p) -> {
+			if (
+					configuration.isCanBeResolved() &&
+							!configuration.getName().equals(Constants.MAPPINGS) &&
+							!configuration.getName().equals("fabricInstall")
+			) {
+				configuration.getAttributes().attribute(deobfAttribute, true);
+			}
+//            });
 		});
 
-		project.afterEvaluate((p) -> {
-			Set<File> files = fabricInstallConfig.resolve();
-			for(File file : files) {
-				ModProcessor.readInstallerJson(file, p);
-			}
-		});
+        Map<Project, Set<Task>> taskMap = project.getAllTasks(true);
+        for (Map.Entry<Project, Set<Task>> entry : taskMap.entrySet()) {
+            Project project = entry.getKey();
+            Set<Task> taskSet = entry.getValue();
+            for (Task task : taskSet) {
+                if (task instanceof JavaCompile
+                        && !(task.getName().contains("Test")) && !(task.getName().contains("test"))) {
+                    JavaCompile javaCompileTask = (JavaCompile) task;
+                    javaCompileTask.doFirst(task1 -> {
+                        project.getLogger().lifecycle(":setting java compiler args");
+                        try {
+                            javaCompileTask.getOptions().getCompilerArgs().add("-AinMapFileNamedIntermediary=" + extension.getMappingsProvider().MAPPINGS_TINY.getCanonicalPath());
+                            javaCompileTask.getOptions().getCompilerArgs().add("-AoutMapFileNamedIntermediary=" + extension.getMappingsProvider().MAPPINGS_MIXIN_EXPORT.getCanonicalPath());
+                            javaCompileTask.getOptions().getCompilerArgs().add("-AoutRefMapFile=" + new File(javaCompileTask.getDestinationDir(), extension.getRefmapName()).getCanonicalPath());
+                            javaCompileTask.getOptions().getCompilerArgs().add("-AdefaultObfuscationEnv=named:intermediary");
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    });
+                }
+            }
+        }
 
-		configureIDEs();
-		configureCompile();
+        configureMaven();
+    }
 
-		Map<Project, Set<Task>> taskMap = project.getAllTasks(true);
-		for (Map.Entry<Project, Set<Task>> entry : taskMap.entrySet()) {
-			Project project = entry.getKey();
-			Set<Task> taskSet = entry.getValue();
-			for (Task task : taskSet) {
-				if (task instanceof JavaCompile
-						&& !(task.getName().contains("Test")) && !(task.getName().contains("test"))) {
-					JavaCompile javaCompileTask = (JavaCompile) task;
-					javaCompileTask.doFirst(task1 -> {
-						project.getLogger().lifecycle(":setting java compiler args");
-						try {
-							javaCompileTask.getOptions().getCompilerArgs().add("-AinMapFileNamedIntermediary=" + extension.getMappingsProvider().MAPPINGS_TINY.getCanonicalPath());
-							javaCompileTask.getOptions().getCompilerArgs().add("-AoutMapFileNamedIntermediary=" + extension.getMappingsProvider().MAPPINGS_MIXIN_EXPORT.getCanonicalPath());
-							javaCompileTask.getOptions().getCompilerArgs().add("-AoutRefMapFile=" + new File(javaCompileTask.getDestinationDir(), extension.getRefmapName()).getCanonicalPath());
-							javaCompileTask.getOptions().getCompilerArgs().add("-AdefaultObfuscationEnv=named:intermediary");
-						} catch (IOException e) {
-							e.printStackTrace();
-						}
-					});
-				}
-			}
-		}
+    public Project getProject() {
+        return project;
+    }
 
-		configureMaven();
-	}
+    /**
+     * Permit to add a Maven repository to a target project
+     *
+     * @param target The garget project
+     * @param name   The name of the repository
+     * @param url    The URL of the repository
+     * @return An object containing the name and the URL of the repository that can be modified later
+     */
+    public MavenArtifactRepository addMavenRepo(Project target, final String name, final String url) {
+        return target.getRepositories().maven(repo -> {
+            repo.setName(name);
+            repo.setUrl(url);
+        });
+    }
 
-	public Project getProject() {
-		return project;
-	}
+    /**
+     * Add Minecraft dependencies to IDE dependencies
+     */
+    protected void configureIDEs() {
+        // IDEA
+        IdeaModel ideaModel = (IdeaModel) project.getExtensions().getByName("idea");
 
-	/**
-	 * Permit to add a Maven repository to a target project
-	 *
-	 * @param target The garget project
-	 * @param name   The name of the repository
-	 * @param url    The URL of the repository
-	 * @return An object containing the name and the URL of the repository that can be modified later
-	 */
-	public MavenArtifactRepository addMavenRepo(Project target, final String name, final String url) {
-		return target.getRepositories().maven(repo -> {
-			repo.setName(name);
-			repo.setUrl(url);
-		});
-	}
+        ideaModel.getModule().getExcludeDirs().addAll(project.files(".gradle", "build", ".idea", "out").getFiles());
+        ideaModel.getModule().setDownloadJavadoc(true);
+        ideaModel.getModule().setDownloadSources(true);
+        ideaModel.getModule().setInheritOutputDirs(true);
 
-	/**
-	 * Add Minecraft dependencies to IDE dependencies
-	 */
-	protected void configureIDEs() {
-		// IDEA
-		IdeaModel ideaModel = (IdeaModel) project.getExtensions().getByName("idea");
+        // ECLIPSE
+        EclipseModel eclipseModel = (EclipseModel) project.getExtensions().getByName("eclipse");
+    }
 
-		ideaModel.getModule().getExcludeDirs().addAll(project.files(".gradle", "build", ".idea", "out").getFiles());
-		ideaModel.getModule().setDownloadJavadoc(true);
-		ideaModel.getModule().setDownloadSources(true);
-		ideaModel.getModule().setInheritOutputDirs(true);
+    private void addModule(Project proj, String configuration, DependencyResult module) {
+        if (module instanceof ResolvedDependencyResult) {
+            if (module.getFrom().getId() instanceof ModuleComponentIdentifier) {
+                ModuleComponentIdentifier mci = ((ModuleComponentIdentifier) module.getFrom().getId());
+                String moduleId = mci.getGroup() + ":" + mci.getModule() + ":" + mci.getVersion();
+                proj.getDependencies().add(configuration, proj.getDependencies().module(moduleId));
+                proj.getLogger().debug("Loom addModule " + moduleId + " to " + configuration);
+            }
 
-		// ECLIPSE
-		EclipseModel eclipseModel = (EclipseModel) project.getExtensions().getByName("eclipse");
-	}
+            for (DependencyResult child : ((ResolvedDependencyResult) module).getSelected().getDependencies()) {
+                addModule(proj, configuration, child);
+            }
+        }
+    }
 
-	private void addModule(Project proj, String configuration, DependencyResult module) {
-		if (module instanceof ResolvedDependencyResult) {
-			if (module.getFrom().getId() instanceof ModuleComponentIdentifier) {
-				ModuleComponentIdentifier mci = ((ModuleComponentIdentifier) module.getFrom().getId());
-				String moduleId = mci.getGroup() + ":" + mci.getModule() + ":" + mci.getVersion();
-				proj.getDependencies().add(configuration, proj.getDependencies().module(moduleId));
-				proj.getLogger().debug("Loom addModule " + moduleId + " to " + configuration);
-			}
+    private boolean findAndAddModule(Project project, String configuration, DependencyResult dep, Predicate<ModuleComponentIdentifier> predicate) {
+        boolean found = false;
 
-			for (DependencyResult child : ((ResolvedDependencyResult) module).getSelected().getDependencies()) {
-				addModule(proj, configuration, child);
-			}
-		}
-	}
+        if (dep instanceof ResolvedDependencyResult) {
+            if (dep.getFrom().getId() instanceof ModuleComponentIdentifier) {
+                ModuleComponentIdentifier mci = ((ModuleComponentIdentifier) dep.getFrom().getId());
+                if (predicate.test(mci)) {
+                    addModule(project, configuration, dep);
+                    found = true;
+                }
+            }
 
-	private boolean findAndAddModule(Project project, String configuration, DependencyResult dep, Predicate<ModuleComponentIdentifier> predicate) {
-		boolean found = false;
+            for (DependencyResult child : ((ResolvedDependencyResult) dep).getSelected().getDependencies()) {
+                findAndAddModule(project, configuration, child, predicate);
+            }
+        }
 
-		if (dep instanceof ResolvedDependencyResult) {
-			if (dep.getFrom().getId() instanceof ModuleComponentIdentifier) {
-				ModuleComponentIdentifier mci = ((ModuleComponentIdentifier) dep.getFrom().getId());
-				if (predicate.test(mci)) {
-					addModule(project, configuration, dep);
-					found = true;
-				}
-			}
+        return found;
+    }
 
-			for (DependencyResult child : ((ResolvedDependencyResult) dep).getSelected().getDependencies()) {
-				findAndAddModule(project, configuration, child, predicate);
-			}
-		}
+    /**
+     * Add Minecraft dependencies to compile time
+     */
+    protected void configureCompile() {
+        JavaPluginConvention javaModule = (JavaPluginConvention) project.getConvention().getPlugins().get("java");
 
-		return found;
-	}
+        SourceSet main = javaModule.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
+        SourceSet test = javaModule.getSourceSets().getByName(SourceSet.TEST_SOURCE_SET_NAME);
 
-	/**
-	 * Add Minecraft dependencies to compile time
-	 */
-	protected void configureCompile() {
-		JavaPluginConvention javaModule = (JavaPluginConvention) project.getConvention().getPlugins().get("java");
+        Javadoc javadoc = (Javadoc) project.getTasks().getByName(JavaPlugin.JAVADOC_TASK_NAME);
+        javadoc.setClasspath(main.getOutput().plus(main.getCompileClasspath()));
 
-		SourceSet main = javaModule.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
-		SourceSet test = javaModule.getSourceSets().getByName(SourceSet.TEST_SOURCE_SET_NAME);
+        // Add Mixin dependencies
+        Project p = project;
+        while (true) {
+            boolean found = false;
+            for (DependencyResult dep : p.getBuildscript().getConfigurations().getByName("classpath").getIncoming().getResolutionResult().getRoot().getDependencies()) {
+                found = findAndAddModule(project, "annotationProcessor", dep, (mci) -> ("net.fabricmc".equals(mci.getGroup()) && "fabric-mixin-compile-extensions".equals(mci.getModule())));
+            }
+            if (found || AbstractPlugin.isRootProject(p)) break;
+            p = p.getRootProject();
+        }
 
-		Javadoc javadoc = (Javadoc) project.getTasks().getByName(JavaPlugin.JAVADOC_TASK_NAME);
-		javadoc.setClasspath(main.getOutput().plus(main.getCompileClasspath()));
+        project.afterEvaluate(project1 -> {
+            LoomGradleExtension extension = project1.getExtensions().getByType(LoomGradleExtension.class);
 
-		// Add Mixin dependencies
-		Project p = project;
-		while (true) {
-			boolean found = false;
-			for (DependencyResult dep : p.getBuildscript().getConfigurations().getByName("classpath").getIncoming().getResolutionResult().getRoot().getDependencies()) {
-				found = findAndAddModule(project, "annotationProcessor", dep, (mci) -> ("net.fabricmc".equals(mci.getGroup()) && "fabric-mixin-compile-extensions".equals(mci.getModule())));
-			}
-			if (found || AbstractPlugin.isRootProject(p)) break;
-			p = p.getRootProject();
-		}
+            project1.getRepositories().flatDir(flatDirectoryArtifactRepository -> {
+                flatDirectoryArtifactRepository.dir(extension.getUserCache());
+                flatDirectoryArtifactRepository.setName("UserCacheFiles");
+            });
 
-		project.afterEvaluate(project1 -> {
-			LoomGradleExtension extension = project1.getExtensions().getByType(LoomGradleExtension.class);
+            project1.getRepositories().flatDir(flatDirectoryArtifactRepository -> {
+                flatDirectoryArtifactRepository.dir(extension.getRootProjectBuildCache());
+                flatDirectoryArtifactRepository.setName("UserLocalCacheFiles");
+            });
 
-			project1.getRepositories().flatDir(flatDirectoryArtifactRepository -> {
-				flatDirectoryArtifactRepository.dir(extension.getUserCache());
-				flatDirectoryArtifactRepository.setName("UserCacheFiles");
-			});
+            project1.getRepositories().flatDir(flatDirectoryArtifactRepository -> {
+                flatDirectoryArtifactRepository.dir(extension.getRemappedModCache());
+                flatDirectoryArtifactRepository.setName("UserLocalRemappedMods");
+            });
 
-			project1.getRepositories().flatDir(flatDirectoryArtifactRepository -> {
-				flatDirectoryArtifactRepository.dir(extension.getRootProjectBuildCache());
-				flatDirectoryArtifactRepository.setName("UserLocalCacheFiles");
-			});
-
-			project1.getRepositories().flatDir(flatDirectoryArtifactRepository -> {
-				flatDirectoryArtifactRepository.dir(extension.getRemappedModCache());
-				flatDirectoryArtifactRepository.setName("UserLocalRemappedMods");
-			});
-
-			project1.getRepositories().maven(mavenArtifactRepository -> {
-				mavenArtifactRepository.setName("Fabric");
-				mavenArtifactRepository.setUrl("https://maven.fabricmc.net/");
-			});
+            project1.getRepositories().maven(mavenArtifactRepository -> {
+                mavenArtifactRepository.setName("Fabric");
+                mavenArtifactRepository.setUrl("https://maven.fabricmc.net/");
+            });
 
 			/* project1.getRepositories().maven(mavenArtifactRepository -> {
 				mavenArtifactRepository.setName("SpongePowered");
 				mavenArtifactRepository.setUrl("http://repo.spongepowered.org/maven");
 			}); */
 
-			project1.getRepositories().maven(mavenArtifactRepository -> {
-				mavenArtifactRepository.setName("Mojang");
-				mavenArtifactRepository.setUrl("https://libraries.minecraft.net/");
-			});
+            project1.getRepositories().maven(mavenArtifactRepository -> {
+                mavenArtifactRepository.setName("Mojang");
+                mavenArtifactRepository.setUrl("https://libraries.minecraft.net/");
+            });
 
-			project1.getRepositories().mavenCentral();
-			project1.getRepositories().jcenter();
+            project1.getRepositories().mavenCentral();
+            project1.getRepositories().jcenter();
 
-			LoomDependencyManager dependencyManager = new LoomDependencyManager();
-			extension.setDependencyManager(dependencyManager);
+            LoomDependencyManager dependencyManager = new LoomDependencyManager();
+            extension.setDependencyManager(dependencyManager);
 
-			dependencyManager.addProvider(new MinecraftProvider());
-			dependencyManager.addProvider(new MappingsProvider());
+            dependencyManager.addProvider(new MinecraftProvider());
+            dependencyManager.addProvider(new MappingsProvider());
 
-			dependencyManager.handleDependencies(project1);
+            dependencyManager.handleDependencies(project1);
 
-			project1.getTasks().getByName("idea").finalizedBy(project1.getTasks().getByName("genIdeaWorkspace"));
-			project1.getTasks().getByName("eclipse").finalizedBy(project1.getTasks().getByName("genEclipseRuns"));
+            project1.getTasks().getByName("idea").finalizedBy(project1.getTasks().getByName("genIdeaWorkspace"));
+            project1.getTasks().getByName("eclipse").finalizedBy(project1.getTasks().getByName("genEclipseRuns"));
 
-			if (extension.autoGenIDERuns && isRootProject(project1)) {
-				SetupIntelijRunConfigs.setup(project1);
-			}
+            if (extension.autoGenIDERuns && isRootProject(project1)) {
+                SetupIntelijRunConfigs.setup(project1);
+            }
 
-			// Enables the default mod remapper
-			if (extension.remapMod) {
-				AbstractArchiveTask jarTask = (AbstractArchiveTask) project1.getTasks().getByName("jar");
-				RemapJarTask remapJarTask = (RemapJarTask) project1.getTasks().findByName("remapJar");
+            // Enables the default mod remapper
+            if (extension.remapMod) {
+                AbstractArchiveTask jarTask = (AbstractArchiveTask) project1.getTasks().getByName("jar");
+                RemapJarTask remapJarTask = (RemapJarTask) project1.getTasks().findByName("remapJar");
 
-				jarTask.getArchiveClassifier().set("dev");
+                jarTask.getArchiveClassifier().set("dev");
 
-				assert remapJarTask != null;
-				if (!remapJarTask.getInput().isPresent()) {
+                assert remapJarTask != null;
+                if (!remapJarTask.getInput().isPresent()) {
 //					remapJarTask.getArchiveClassifier().set("remapped");
-					remapJarTask.getInput().set(jarTask.getArchiveFile());
-				}
+                    remapJarTask.getInput().set(jarTask.getArchiveFile());
+                }
 
-				remapJarTask.getAddNestedDependencies().set(true);
+                remapJarTask.getAddNestedDependencies().set(true);
 
-				ArtifactRemover.removeArtifacts(project1, jarTask, true);
-				project1.artifacts((artifactHandler -> {
+                ArtifactRemover.removeArtifacts(project1, jarTask, true);
+                project1.artifacts((artifactHandler -> {
 //					artifactHandler.add(Dependency.DEFAULT_CONFIGURATION, remapJarTask);
 //					artifactHandler.add(JavaPlugin.API_ELEMENTS_CONFIGURATION_NAME, jarTask);
-					artifactHandler.add(JavaPlugin.API_CONFIGURATION_NAME, remapJarTask);
+                    artifactHandler.add(JavaPlugin.API_CONFIGURATION_NAME, remapJarTask);
 //					artifactHandler.add(JavaPlugin.API_CONFIGURATION_NAME, jarTask);
-					artifactHandler.add(JavaPlugin.RUNTIME_ELEMENTS_CONFIGURATION_NAME, remapJarTask);
-					artifactHandler.add(Dependency.ARCHIVES_CONFIGURATION, remapJarTask);
-				}));
+                    artifactHandler.add(JavaPlugin.RUNTIME_ELEMENTS_CONFIGURATION_NAME, remapJarTask);
+                    artifactHandler.add(Dependency.ARCHIVES_CONFIGURATION, remapJarTask);
+                }));
 
 
 //				remapJarTask.doLast(task -> project1.getArtifacts().add("archives", remapJarTask.getArchiveFile()));
-				remapJarTask.dependsOn(project1.getTasks().getByName("jar"));
-				project1.getTasks().getByName("build").dependsOn(remapJarTask);
+                remapJarTask.dependsOn(project1.getTasks().getByName("jar"));
+                project1.getTasks().getByName("build").dependsOn(remapJarTask);
 
-				Map<Project, Set<Task>> taskMap = project.getAllTasks(true);
+                Map<Project, Set<Task>> taskMap = project.getAllTasks(true);
 //				for (Map.Entry<Project, Set<Task>> entry : taskMap.entrySet()) {
 //					Set<Task> taskSet = entry.getValue();
 //					for (Task task : taskSet) {
@@ -392,73 +398,73 @@ public class AbstractPlugin implements Plugin<Project> {
 //					}
 //				}
 
-				try {
-					AbstractArchiveTask sourcesTask = (AbstractArchiveTask) project1.getTasks().getByName("sourcesJar");
+                try {
+                    AbstractArchiveTask sourcesTask = (AbstractArchiveTask) project1.getTasks().getByName("sourcesJar");
 
-					RemapSourcesJarTask remapSourcesJarTask = (RemapSourcesJarTask) project1.getTasks().findByName("remapSourcesJar");
-					remapSourcesJarTask.setInput(sourcesTask.getArchiveFile());
-					remapSourcesJarTask.setOutput(sourcesTask.getArchiveFile());
-					remapSourcesJarTask.doLast(task -> project1.getArtifacts().add("archives", remapSourcesJarTask.getOutput()));
-					remapSourcesJarTask.dependsOn(project1.getTasks().getByName("sourcesJar"));
-					project1.getTasks().getByName("build").dependsOn(remapSourcesJarTask);
-				} catch (UnknownTaskException e) {
-					// pass
-				}
-			} else {
-				AbstractArchiveTask jarTask = (AbstractArchiveTask) project1.getTasks().getByName("jar");
-				extension.addUnmappedMod(jarTask.getArchivePath().toPath());
-			}
-		});
-	}
+                    RemapSourcesJarTask remapSourcesJarTask = (RemapSourcesJarTask) project1.getTasks().findByName("remapSourcesJar");
+                    remapSourcesJarTask.setInput(sourcesTask.getArchiveFile());
+                    remapSourcesJarTask.setOutput(sourcesTask.getArchiveFile());
+                    remapSourcesJarTask.doLast(task -> project1.getArtifacts().add("archives", remapSourcesJarTask.getOutput()));
+                    remapSourcesJarTask.dependsOn(project1.getTasks().getByName("sourcesJar"));
+                    project1.getTasks().getByName("build").dependsOn(remapSourcesJarTask);
+                } catch (UnknownTaskException e) {
+                    // pass
+                }
+            } else {
+                AbstractArchiveTask jarTask = (AbstractArchiveTask) project1.getTasks().getByName("jar");
+                extension.addUnmappedMod(jarTask.getArchivePath().toPath());
+            }
+        });
+    }
 
-	protected void configureMaven() {
-		project.afterEvaluate((p) -> {
-			for (RemappedConfigurationEntry entry : Constants.MOD_COMPILE_ENTRIES) {
-				if (!entry.hasMavenScope()) {
-					continue;
-				}
+    protected void configureMaven() {
+        project.afterEvaluate((p) -> {
+            for (RemappedConfigurationEntry entry : Constants.MOD_COMPILE_ENTRIES) {
+                if (!entry.hasMavenScope()) {
+                    continue;
+                }
 
-				Configuration compileModsConfig = p.getConfigurations().getByName(entry.getSourceConfiguration());
+                Configuration compileModsConfig = p.getConfigurations().getByName(entry.getSourceConfiguration());
 
-				// add modsCompile to maven-publish
-				PublishingExtension mavenPublish = p.getExtensions().findByType(PublishingExtension.class);
-				if (mavenPublish != null) {
-					mavenPublish.publications((publications) -> {
-						for (Publication publication : publications) {
-							if (publication instanceof MavenPublication) {
-								((MavenPublication) publication).pom((pom) -> {
-									pom.withXml((xml) -> {
-										Node dependencies = GroovyXmlUtil.getOrCreateNode(xml.asNode(), "dependencies");
-										Set<String> foundArtifacts = new HashSet<>();
+                // add modsCompile to maven-publish
+                PublishingExtension mavenPublish = p.getExtensions().findByType(PublishingExtension.class);
+                if (mavenPublish != null) {
+                    mavenPublish.publications((publications) -> {
+                        for (Publication publication : publications) {
+                            if (publication instanceof MavenPublication) {
+                                ((MavenPublication) publication).pom((pom) -> {
+                                    pom.withXml((xml) -> {
+                                        Node dependencies = GroovyXmlUtil.getOrCreateNode(xml.asNode(), "dependencies");
+                                        Set<String> foundArtifacts = new HashSet<>();
 
-										GroovyXmlUtil.childrenNodesStream(dependencies)
-												.filter((n) -> "dependency".equals(n.name()))
-												.forEach((n) -> {
-													Optional<Node> groupId = GroovyXmlUtil.getNode(n, "groupId");
-													Optional<Node> artifactId = GroovyXmlUtil.getNode(n, "artifactId");
-													if (groupId.isPresent() && artifactId.isPresent()) {
-														foundArtifacts.add(groupId.get().text() + ":" + artifactId.get().text());
-													}
-												});
+                                        GroovyXmlUtil.childrenNodesStream(dependencies)
+                                                .filter((n) -> "dependency".equals(n.name()))
+                                                .forEach((n) -> {
+                                                    Optional<Node> groupId = GroovyXmlUtil.getNode(n, "groupId");
+                                                    Optional<Node> artifactId = GroovyXmlUtil.getNode(n, "artifactId");
+                                                    if (groupId.isPresent() && artifactId.isPresent()) {
+                                                        foundArtifacts.add(groupId.get().text() + ":" + artifactId.get().text());
+                                                    }
+                                                });
 
-										for (Dependency dependency : compileModsConfig.getAllDependencies()) {
-											if (foundArtifacts.contains(dependency.getGroup() + ":" + dependency.getName())) {
-												continue;
-											}
+                                        for (Dependency dependency : compileModsConfig.getAllDependencies()) {
+                                            if (foundArtifacts.contains(dependency.getGroup() + ":" + dependency.getName())) {
+                                                continue;
+                                            }
 
-											Node depNode = dependencies.appendNode("dependency");
-											depNode.appendNode("groupId", dependency.getGroup());
-											depNode.appendNode("artifactId", dependency.getName());
-											depNode.appendNode("version", dependency.getVersion());
-											depNode.appendNode("scope", entry.getMavenScope());
-										}
-									});
-								});
-							}
-						}
-					});
-				}
-			}
-		});
-	}
+                                            Node depNode = dependencies.appendNode("dependency");
+                                            depNode.appendNode("groupId", dependency.getGroup());
+                                            depNode.appendNode("artifactId", dependency.getName());
+                                            depNode.appendNode("version", dependency.getVersion());
+                                            depNode.appendNode("scope", entry.getMavenScope());
+                                        }
+                                    });
+                                });
+                            }
+                        }
+                    });
+                }
+            }
+        });
+    }
 }

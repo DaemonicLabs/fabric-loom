@@ -72,10 +72,11 @@ public abstract class DeobfTransformer implements TransformAction<DeobfTransform
                 ModProcessor.remapJar(inputFile, outputs.file(nameWithoutExtension + "-deobf.jar"), mappingsFile, project);
             } catch (IOException e) {
                 throw new RuntimeException("Failed to remap " + inputFile.getName(), e);
-            } catch (Exception e) {
-                e.printStackTrace();
-                throw new RuntimeException("Failed to remap " + inputFile.getName(), e);
             }
+//            catch (Exception e) {
+//                e.printStackTrace();
+//                throw new RuntimeException("Failed to remap " + inputFile.getName(), e);
+//            }
         } else {
             outputs.file(getInput());
         }
