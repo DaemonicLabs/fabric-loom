@@ -61,7 +61,7 @@ public class ModProcessor {
 		if(output.exists()){
 			output.delete();
 		}
-		remapJar(input, output, project);
+		remapJar(input, output, null, project);
 		//Enable this if you want your nested jars to be extracted, this will extract **all** jars
 		if(project.getExtensions().getByType(LoomGradleExtension.class).extractJars){
 			handleNestedJars(input, project, config);
@@ -133,59 +133,7 @@ public class ModProcessor {
 
 	static SoftReference<Mappings> mappings;
 
-	public synchronized static void remapJar2(File input, File output, File mappingsFile, Project project) throws IOException {
-		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
-		String fromM = "intermediary";
-		String toM = "named";
-
-		// TODO: pass mapped minecraft via parameters
-		MinecraftMappedProvider mappedProvider = extension.getMinecraftMappedProvider();
-		MappingsProvider mappingsProvider = extension.getMappingsProvider();
-
-		Path inputPath = input.getAbsoluteFile().toPath();
-		Path mc = mappedProvider.MINECRAFT_INTERMEDIARY_JAR.toPath();
-		Path[] mcDeps = mappedProvider.getMapperPaths().stream()
-				.map(File::toPath)
-				.toArray(Path[]::new);
-		Set<Path> modCompiles = new HashSet<>();
-		for (RemappedConfigurationEntry entry : Constants.MOD_COMPILE_ENTRIES) {
-			project.getConfigurations().getByName(entry.getSourceConfiguration()).getFiles().stream()
-					.filter((f) -> !f.equals(input))
-					.map(p -> {
-						if (p.equals(input)) {
-							return inputPath;
-						} else {
-							return p.toPath();
-						}
-					})
-					.forEach(modCompiles::add);
-		}
-
-
-		project.getLogger().lifecycle(":remapping " + input.getName() + " (TinyRemapper, " + fromM + " -> " + toM + ")");
-
-
-		TinyRemapper remapper = TinyRemapper.newRemapper()
-				.withMappings(TinyRemapperMappingsHelper.create(mappingsProvider.getMappings(), fromM, toM))
-				.build();
-
-		try (OutputConsumerPath outputConsumer = new OutputConsumerPath(Paths.get(output.getAbsolutePath()))) {
-			outputConsumer.addNonClassFiles(inputPath);
-			remapper.readClassPath(modCompiles.toArray(new Path[0]));
-			remapper.readClassPath(mc);
-			remapper.readClassPath(mcDeps);
-			remapper.readInputs(inputPath);
-			remapper.apply(outputConsumer);
-		} finally {
-			remapper.finish();
-		}
-
-		if(!output.exists()){
-			throw new RuntimeException("Failed to remap JAR to " + toM + " file not found: " + output.getAbsolutePath());
-		}
-	}
-
-	public static void remapJar(File input, File output, Project project) throws IOException {
+	public synchronized static void remapJar(File input, File output, File mappingsFile, Project project) throws IOException {
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 		String fromM = "intermediary";
 		String toM = "named";

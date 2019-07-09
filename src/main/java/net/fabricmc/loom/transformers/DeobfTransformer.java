@@ -49,15 +49,15 @@ public abstract class DeobfTransformer implements TransformAction<DeobfTransform
 	@InputArtifact
 	public abstract Provider<FileSystemLocation> getInput();
 
-	@InputArtifactDependencies
-	public abstract FileCollection getDependencies();
+//	@InputArtifactDependencies
+//	public abstract FileCollection getDependencies();
 
 	@Override
 	public void transform(TransformOutputs outputs) {
 		Logger logger = LoggerFactory.getLogger(DeobfTransformer.class);
 		ConfigurableFileCollection mappingsFileCollection = getParameters().getMappings();
 		File mappingsFile = mappingsFileCollection.iterator().next(); //.getAsFile().get();
-		FileCollection dependencies = getDependencies();
+//		FileCollection dependencies = getDependencies();
 
 		File inputFile = getInput().get().getAsFile();
 
@@ -71,41 +71,46 @@ public abstract class DeobfTransformer implements TransformAction<DeobfTransform
 //			throw new RuntimeException("this works");
 //		}
 
-		try {
-			String fileName = inputFile.getName();
-			String nameWithoutExtension = fileName.substring(0, fileName.length() - 4);
-			ModProcessor.remapJar2(inputFile, outputs.file(nameWithoutExtension + "-deobf.jar"), mappingsFile, project);
-		} catch (IOException e) {
-			throw new RuntimeException("Failed to remap " + inputFile.getName(), e);
-		} catch (Exception e) {
-			e.printStackTrace();
-			throw new RuntimeException("Failed to remap " + inputFile.getName(), e);
-		}
 
+        if (ZipUtil.containsEntry(inputFile, "fabric.mod.json")) {
+            try {
+                String fileName = inputFile.getName();
+                String nameWithoutExtension = fileName.substring(0, fileName.length() - 4);
+                ModProcessor.remapJar(inputFile, outputs.file(nameWithoutExtension + "-deobf.jar"), mappingsFile, project);
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to remap " + inputFile.getName(), e);
+            } catch (Exception e) {
+                e.printStackTrace();
+                throw new RuntimeException("Failed to remap " + inputFile.getName(), e);
+            }
+        } else {
+            outputs.file(getInput());
+        }
 
-		logger.warn("remapping dependencies");
-		for(File depFile : dependencies) {
-
-			// TODO: add marker file in jar or similar
-			if(depFile.getName().endsWith("-deobf.jar")) {
-				logger.warn("skipping already remapped " + depFile);
-				continue;
-			}
-			if (ZipUtil.containsEntry(depFile, "fabric.mod.json")) {
-				try {
-					String fileName = depFile.getName();
-					String nameWithoutExtension = fileName.substring(0, fileName.length() - 4);
-					ModProcessor.remapJar2(depFile, outputs.file(nameWithoutExtension + "-deobf.jar"), mappingsFile, project);
-				} catch (IOException e) {
-					throw new RuntimeException("Failed to remap " + depFile.getName(), e);
-				} catch (Exception e) {
-					e.printStackTrace();
-					throw new RuntimeException("Failed to remap " + inputFile.getName(), e);
-				}
-			} else {
-				logger.warn("skipping " + depFile);
-			}
-		}
+//
+//		logger.warn("remapping dependencies");
+//		for(File depFile : dependencies) {
+//
+//			// TODO: add marker file in jar or similar
+//			if(depFile.getName().endsWith("-deobf.jar")) {
+//				logger.warn("skipping already remapped " + depFile);
+//				continue;
+//			}
+//			if (ZipUtil.containsEntry(depFile, "fabric.mod.json")) {
+//				try {
+//					String fileName = depFile.getName();
+//					String nameWithoutExtension = fileName.substring(0, fileName.length() - 4);
+//					ModProcessor.remapJar(depFile, outputs.file(nameWithoutExtension + "-deobf.jar"), mappingsFile, project);
+//				} catch (IOException e) {
+//					throw new RuntimeException("Failed to remap " + depFile.getName(), e);
+//				} catch (Exception e) {
+//					e.printStackTrace();
+//					throw new RuntimeException("Failed to remap " + inputFile.getName(), e);
+//				}
+//			} else {
+//				logger.warn("skipping " + depFile);
+//			}
+//		}
 
 //		outputs.file(getInput());
 	}

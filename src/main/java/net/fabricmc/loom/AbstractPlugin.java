@@ -154,13 +154,13 @@ public class AbstractPlugin implements Plugin<Project> {
 		ProjectHolder.setProject(project);
 
 		// sets all dependencies to be remapped
-//        project.getConfigurations().all((configuration) -> {
-//            project.afterEvaluate((p) -> {
-//                if (configuration.getName().equals("compile") && configuration.isCanBeResolved()) {
-//                    configuration.getAttributes().attribute(debofAttribute, true);
-//                }
-//            });
-//        });
+        project.getConfigurations().all((configuration) -> {
+            project.afterEvaluate((p) -> {
+                if (configuration.isCanBeResolved()) {
+                    configuration.getAttributes().attribute(debofAttribute, true);
+                }
+            });
+        });
 
 		project.getDependencies().registerTransform(DeobfTransformer.class, spec -> {
 			spec.getFrom().attribute(debofAttribute, false).attribute(artifactType, "jar");
