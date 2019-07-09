@@ -63,16 +63,9 @@ public abstract class DeobfTransformer implements TransformAction<DeobfTransform
 
 		Project project =  ProjectHolder.getProject();
 
-		logger.warn("Project: " + project.getDisplayName());
-		logger.warn("Hello this seems to work!");
-		logger.warn("using mappings: " + mappingsFile.toString());
-
-//		if(true){
-//			throw new RuntimeException("this works");
-//		}
-
-
         if (ZipUtil.containsEntry(inputFile, "fabric.mod.json")) {
+            logger.warn("Project: " + project.getDisplayName());
+            logger.warn("remapping "+ inputFile.getName() + " using mappings: " + mappingsFile.toString());
             try {
                 String fileName = inputFile.getName();
                 String nameWithoutExtension = fileName.substring(0, fileName.length() - 4);
